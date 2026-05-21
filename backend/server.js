@@ -89,6 +89,11 @@ function getDailyLimit(db) {
   return Number(db.settings.dailyDebitLimit || DEFAULT_DAILY_LIMIT);
 }
 
+function normalizeCardPrefix(value) {
+  const prefix = String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return prefix || defaultSettings.cardPrefix;
+}
+
 function getCardById(db, cardId) {
   return db.cards.find((card) => card.id === cardId || card.card_number === cardId);
 }
@@ -188,7 +193,7 @@ function getCardSummary(db, card) {
 }
 
 function getNextCardNumber(db) {
-  const prefix = db.settings.cardPrefix || 'RYV';
+  const prefix = normalizeCardPrefix(db.settings.cardPrefix);
   const existingNumbers = db.cards
     .map((card) => card.card_number)
     .filter((cardNumber) => cardNumber.startsWith(`${prefix}-`))
@@ -445,12 +450,12 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
     address: req.body.address || '',
     currencySymbol: req.body.currencySymbol || db.settings.currencySymbol,
     dailyDebitLimit: Number(req.body.dailyDebitLimit || db.settings.dailyDebitLimit),
-    cardPrefix: req.body.cardPrefix || db.settings.cardPrefix,
+    cardPrefix: normalizeCardPrefix(req.body.cardPrefix || db.settings.cardPrefix),
   };
 
   db.settings = nextSettings;
   writeDb(db);
-  res.json({ settings: getPublicSettings(nextSettings) });
+  res.json({ settings: getPublicSettings(nextSettings), nextCardNumber: getNextCardNumber(db) });
 });
 
 app.get('/api/admin/cards', requireAdmin, (req, res) => {

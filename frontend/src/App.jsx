@@ -400,6 +400,10 @@ function AdminApp({ settings, setSettings }) {
         body: JSON.stringify(settings),
       });
       setSettings(data.settings);
+      if (data.nextCardNumber) {
+        setNextCardNumber(data.nextCardNumber);
+        setCardForm((prev) => ({ ...prev, cardNumber: data.nextCardNumber }));
+      }
       setMessage('Business settings saved');
     } catch (error) {
       setMessage(error.message);
@@ -569,7 +573,7 @@ function AdminApp({ settings, setSettings }) {
               <label>Primary color<input type="color" value={settings.primaryColor} onChange={(event) => setSettings({ ...settings, primaryColor: event.target.value })} /></label>
               <label>Currency symbol<input value={settings.currencySymbol} onChange={(event) => setSettings({ ...settings, currencySymbol: event.target.value })} /></label>
               <label>Daily debit limit<input type="number" value={settings.dailyDebitLimit} onChange={(event) => setSettings({ ...settings, dailyDebitLimit: Number(event.target.value) })} /></label>
-              <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase() })} /></label>
+              <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} /></label>
               <label>Support phone<input value={settings.supportPhone} onChange={(event) => setSettings({ ...settings, supportPhone: event.target.value })} /></label>
               <label>Support email<input value={settings.supportEmail} onChange={(event) => setSettings({ ...settings, supportEmail: event.target.value })} /></label>
               <label className="wide-field">Address<input value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} /></label>
