@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-domain.example.com/api/:path*"
+      "destination": "https://nfc-1-f9i3.onrender.com/api/:path*"
     },
     {
       "source": "/:path*",
@@ -10,4 +10,3 @@
     }
   ]
 }
-
