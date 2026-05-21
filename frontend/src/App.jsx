@@ -189,6 +189,11 @@ function CustomerApp({ settings, setSettings }) {
     );
   }
 
+  const cardStyle = {
+    background: `linear-gradient(135deg, rgba(22, 32, 42, 0.96), ${settings.primaryColor || '#2764ff'}), linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25% 50%, rgba(255, 255, 255, 0.08) 50% 75%, transparent 75%)`,
+    backgroundSize: 'auto, 30px 30px',
+  };
+
   return (
     <main className="app-screen">
       <section className="app-shell compact-shell">
@@ -196,7 +201,7 @@ function CustomerApp({ settings, setSettings }) {
 
         {card ? (
           <>
-            <section className="card-panel">
+            <section className="card-panel" style={cardStyle}>
               <div>
                 <span className="label">Card Holder</span>
                 <h2>{card.holderName}</h2>
@@ -293,7 +298,7 @@ function CustomerApp({ settings, setSettings }) {
             )}
           </>
         ) : (
-          <section className="card-panel missing-card">
+          <section className="card-panel missing-card" style={cardStyle}>
             <div>
               <span className="label">NFC Card</span>
               <h2>Card not found</h2>
