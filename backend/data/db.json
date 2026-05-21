@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "businessName": "NFC-RYV",
+    "logoUrl": "",
+    "primaryColor": "#2764ff",
+    "supportPhone": "9999999999",
+    "supportEmail": "support@example.com",
+    "address": "Business address",
+    "currencySymbol": "Rs.",
+    "dailyDebitLimit": 50,
+    "cardPrefix": "RYV"
+  },
+  "admins": [
+    {
+      "id": "admin-001",
+      "username": "admin",
+      "password_hash": "$2b$10$qGvk71lNwuwEplB8GRTXQO1u32XdG0neTxnW20S4SD4EYzUf7spkO",
+      "name": "Administrator",
+      "role": "admin",
+      "created_at": "2026-05-22T00:00:00.000Z"
+    }
+  ],
+  "cards": [
+    {
+      "id": "demo-card-001",
+      "card_number": "RYV-001",
+      "holder_name": "Demo User",
+      "phone": "9999999999",
+      "password_hash": "$2b$10$UUf2gItAFQY8oqluU1pF/.zvI3G9Ng7YVlsDxkm3MW6tYr5uPUTKa",
+      "balance": 250,
+      "status": "active",
+      "created_at": "2026-05-22T00:00:00.000Z"
+    }
+  ],
+  "transactions": []
+}
