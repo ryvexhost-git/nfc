@@ -12,6 +12,7 @@
   },
   "admins": [
     {
+      "active": true,
       "id": "admin-001",
       "username": "admin",
       "password_hash": "$2b$10$qGvk71lNwuwEplB8GRTXQO1u32XdG0neTxnW20S4SD4EYzUf7spkO",

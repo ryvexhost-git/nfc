@@ -62,7 +62,10 @@ function ensureDb() {
 function normalizeDb(data) {
   return {
     settings: { ...defaultSettings, ...(data.settings || {}) },
-    admins: data.admins?.length ? data.admins : [defaultAdmin],
+    admins: (data.admins?.length ? data.admins : [defaultAdmin]).map((admin) => ({
+      active: true,
+      ...admin,
+    })),
     cards: data.cards || [],
     transactions: data.transactions || [],
   };
@@ -148,6 +151,13 @@ function requireAdmin(req, res, next) {
   const session = getAdminToken(req);
   if (!session) return res.status(401).json({ error: 'Admin login required' });
   req.admin = session;
+  next();
+}
+
+function requireOwnerAdmin(req, res, next) {
+  if (req.admin?.role !== 'admin') {
+    return res.status(403).json({ error: 'Only an admin can manage staff users' });
+  }
   next();
 }
 
@@ -315,7 +325,7 @@ app.post('/api/debit', (req, res) => {
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
   const db = readDb();
-  const admin = db.admins.find((item) => item.username.toLowerCase() === String(username || '').toLowerCase());
+  const admin = db.admins.find((item) => item.active !== false && item.username.toLowerCase() === String(username || '').toLowerCase());
 
   if (!admin || !(await bcrypt.compare(password || '', admin.password_hash))) {
     return res.status(401).json({ error: 'Invalid admin credentials' });
@@ -341,6 +351,80 @@ app.get('/api/admin/me', requireAdmin, (req, res) => {
     admin: { id: admin?.id, username: admin?.username, name: admin?.name, role: admin?.role },
     settings: getPublicSettings(db.settings),
   });
+});
+
+app.get('/api/admin/users', requireAdmin, requireOwnerAdmin, (req, res) => {
+  const db = readDb();
+  const users = db.admins.map((admin) => ({
+    id: admin.id,
+    username: admin.username,
+    name: admin.name,
+    role: admin.role,
+    active: admin.active !== false,
+    createdAt: admin.created_at,
+  }));
+  res.json({ users });
+});
+
+app.post('/api/admin/users', requireAdmin, requireOwnerAdmin, async (req, res) => {
+  const db = readDb();
+  const { username, name, password, role } = req.body;
+
+  if (!username || !name || !password) {
+    return res.status(400).json({ error: 'Username, name, and password are required' });
+  }
+
+  if (!['admin', 'manager'].includes(role)) {
+    return res.status(400).json({ error: 'Role must be admin or manager' });
+  }
+
+  if (db.admins.some((admin) => admin.username.toLowerCase() === username.toLowerCase())) {
+    return res.status(409).json({ error: 'Username already exists' });
+  }
+
+  const user = {
+    id: uuidv4(),
+    username,
+    name,
+    role,
+    active: true,
+    password_hash: await bcrypt.hash(password, 10),
+    created_at: new Date().toISOString(),
+  };
+
+  db.admins.push(user);
+  writeDb(db);
+
+  res.status(201).json({
+    user: { id: user.id, username: user.username, name: user.name, role: user.role, active: user.active, createdAt: user.created_at },
+  });
+});
+
+app.put('/api/admin/users/:userId/password', requireAdmin, requireOwnerAdmin, async (req, res) => {
+  const db = readDb();
+  const user = db.admins.find((admin) => admin.id === req.params.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!req.body.password) return res.status(400).json({ error: 'New password is required' });
+
+  user.password_hash = await bcrypt.hash(req.body.password, 10);
+  user.updated_at = new Date().toISOString();
+  writeDb(db);
+
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/users/:userId', requireAdmin, requireOwnerAdmin, (req, res) => {
+  const db = readDb();
+  const user = db.admins.find((admin) => admin.id === req.params.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.id === req.admin.adminId) return res.status(400).json({ error: 'You cannot delete your own login' });
+  if (user.username === 'admin') return res.status(400).json({ error: 'Default admin cannot be deleted' });
+
+  user.active = false;
+  user.updated_at = new Date().toISOString();
+  writeDb(db);
+
+  res.json({ success: true });
 });
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
@@ -439,6 +523,19 @@ app.put('/api/admin/cards/:cardId', requireAdmin, async (req, res) => {
 
   writeDb(db);
   res.json({ card: getPublicCard(card, db) });
+});
+
+app.delete('/api/admin/cards/:cardId', requireAdmin, (req, res) => {
+  const db = readDb();
+  const card = getCardById(db, req.params.cardId);
+  if (!card) return res.status(404).json({ error: 'Card not found' });
+
+  card.status = 'deleted';
+  card.deleted_at = new Date().toISOString();
+  card.updated_at = card.deleted_at;
+  writeDb(db);
+
+  res.json({ success: true });
 });
 
 app.post('/api/admin/cards/:cardId/topup', requireAdmin, (req, res) => {

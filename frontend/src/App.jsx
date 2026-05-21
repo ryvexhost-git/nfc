@@ -319,12 +319,15 @@ function AdminApp({ settings, setSettings }) {
   const [token, setToken] = useState(getAdminToken());
   const [login, setLogin] = useState({ username: 'admin', password: '' });
   const [cards, setCards] = useState([]);
+  const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [nextCardNumber, setNextCardNumber] = useState('');
   const [activeCardId, setActiveCardId] = useState('');
   const [message, setMessage] = useState('');
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
+  const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
+  const [passwordReset, setPasswordReset] = useState({ userId: '', password: '' });
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -350,14 +353,16 @@ function AdminApp({ settings, setSettings }) {
 
   const loadAdminData = async () => {
     try {
-      const [settingsData, cardsData, txData] = await Promise.all([
+      const [settingsData, cardsData, txData, usersData] = await Promise.all([
         apiJson('/admin/settings'),
         apiJson('/admin/cards'),
         apiJson('/admin/transactions'),
+        apiJson('/admin/users'),
       ]);
       setSettings(settingsData.settings);
       setCards(cardsData.cards);
       setTransactions(txData.transactions);
+      setUsers(usersData.users);
       setNextCardNumber(cardsData.nextCardNumber);
       setCardForm((prev) => ({ ...prev, cardNumber: prev.cardNumber || cardsData.nextCardNumber }));
     } catch (error) {
@@ -439,6 +444,59 @@ function AdminApp({ settings, setSettings }) {
       setTopUpForm({ cardId: '', amount: '', note: '' });
       await loadAdminData();
       setMessage('Balance topped up');
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const createUser = async (event) => {
+    event.preventDefault();
+    try {
+      const data = await apiJson('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(userForm),
+      });
+      setUsers((prev) => [...prev, data.user]);
+      setUserForm({ username: '', name: '', password: '', role: 'manager' });
+      setMessage('Manager user created');
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const resetUserPassword = async (event) => {
+    event.preventDefault();
+    if (!passwordReset.userId) {
+      setMessage('Choose a user to reset password');
+      return;
+    }
+    try {
+      await apiJson(`/admin/users/${passwordReset.userId}/password`, {
+        method: 'PUT',
+        body: JSON.stringify({ password: passwordReset.password }),
+      });
+      setPasswordReset({ userId: '', password: '' });
+      setMessage('Password reset successfully');
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    try {
+      await apiJson(`/admin/users/${userId}`, { method: 'DELETE' });
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, active: false } : user)));
+      setMessage('User disabled');
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const deleteCard = async (cardId) => {
+    try {
+      await apiJson(`/admin/cards/${cardId}`, { method: 'DELETE' });
+      setCards((prev) => prev.filter((card) => card.id !== cardId));
+      setMessage('Card user deleted');
     } catch (error) {
       setMessage(error.message);
     }
@@ -529,6 +587,59 @@ function AdminApp({ settings, setSettings }) {
         </div>
 
         <div className="admin-grid">
+          <form className="panel" onSubmit={createUser}>
+            <div className="panel-head">
+              <h2>Create Manager User</h2>
+              <button type="submit">Create</button>
+            </div>
+            <div className="field-grid">
+              <label>Username<input value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} required /></label>
+              <label>Name<input value={userForm.name} onChange={(event) => setUserForm({ ...userForm, name: event.target.value })} required /></label>
+              <label>Password<input value={userForm.password} onChange={(event) => setUserForm({ ...userForm, password: event.target.value })} required /></label>
+              <label>Role<select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}><option value="manager">manager</option><option value="admin">admin</option></select></label>
+            </div>
+          </form>
+
+          <form className="panel" onSubmit={resetUserPassword}>
+            <div className="panel-head">
+              <h2>Admin Password Reset</h2>
+              <button type="submit">Reset</button>
+            </div>
+            <div className="field-grid">
+              <label>User<select value={passwordReset.userId} onChange={(event) => setPasswordReset({ ...passwordReset, userId: event.target.value })}><option value="">Select user</option>{users.filter((user) => user.active).map((user) => <option key={user.id} value={user.id}>{user.username} - {user.role}</option>)}</select></label>
+              <label>New password<input value={passwordReset.password} onChange={(event) => setPasswordReset({ ...passwordReset, password: event.target.value })} required /></label>
+            </div>
+          </form>
+        </div>
+
+        <section className="panel">
+          <div className="panel-head">
+            <h2>Admin & Manager Users</h2>
+            <span className="muted">Disable old manager logins and reset passwords.</span>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.username}</td>
+                    <td>{user.name}</td>
+                    <td>{user.role}</td>
+                    <td><span className={`small-status ${user.active ? 'active' : 'blocked'}`}>{user.active ? 'active' : 'disabled'}</span></td>
+                    <td>
+                      <button className="table-button danger-button" type="button" disabled={!user.active || user.username === 'admin'} onClick={() => deleteUser(user.id)}>Disable</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="admin-grid">
           <form className="panel" onSubmit={topUpCard}>
             <div className="panel-head">
               <h2>Balance Top-up</h2>
@@ -571,6 +682,9 @@ function AdminApp({ settings, setSettings }) {
                     <td>
                       <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
                         {card.status === 'active' ? 'Block' : 'Activate'}
+                      </button>
+                      <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
+                        Delete
                       </button>
                     </td>
                   </tr>

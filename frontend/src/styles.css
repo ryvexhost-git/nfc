@@ -366,6 +366,17 @@ select {
 .table-button {
   padding: 0.45rem 0.7rem;
   font-size: 0.78rem;
+  margin-right: 0.4rem;
+}
+
+.danger-button {
+  border-color: rgba(220, 38, 38, 0.24);
+  color: #991b1b;
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .stats-grid {
