@@ -278,6 +278,11 @@ select {
   gap: 1rem;
 }
 
+.topup-row {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
 .transaction-row strong {
   display: block;
   color: #16202a;

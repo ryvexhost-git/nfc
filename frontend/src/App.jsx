@@ -59,7 +59,8 @@ function CustomerApp({ settings, setSettings }) {
   const [amount, setAmount] = useState('');
   const [executiveName, setExecutiveName] = useState('');
   const [note, setNote] = useState('');
-  const [transactions, setTransactions] = useState([]);
+  const [debits, setDebits] = useState([]);
+  const [topups, setTopups] = useState([]);
   const [debitedToday, setDebitedToday] = useState(0);
   const [remainingDailyLimit, setRemainingDailyLimit] = useState(settings.dailyDebitLimit);
   const [loading, setLoading] = useState(true);
@@ -104,7 +105,8 @@ function CustomerApp({ settings, setSettings }) {
 
   const syncAccount = (data) => {
     setCard(data.card);
-    setTransactions(data.transactions || []);
+    setDebits(data.debits || []);
+    setTopups(data.topups || []);
     setDebitedToday(Number(data.debitedToday || 0));
     setRemainingDailyLimit(Number(data.remainingDailyLimit || 0));
     if (data.settings) setSettings(data.settings);
@@ -173,7 +175,8 @@ function CustomerApp({ settings, setSettings }) {
   const handleLock = () => {
     localStorage.removeItem(`nfc_ryv_token_${cardId}`);
     setToken(null);
-    setTransactions([]);
+    setDebits([]);
+    setTopups([]);
     setDebitedToday(0);
     setRemainingDailyLimit(card?.dailyLimit || settings.dailyDebitLimit);
   };
@@ -249,15 +252,36 @@ function CustomerApp({ settings, setSettings }) {
                     <h3>Recent Debits</h3>
                     <button type="button" onClick={handleLock}>Lock</button>
                   </div>
-                  {transactions.length === 0 ? (
-                    <p>No transactions yet.</p>
+                  {debits.length === 0 ? (
+                    <p>No debits yet.</p>
                   ) : (
                     <div className="transaction-list">
-                      {transactions.map((transaction) => (
+                      {debits.map((transaction) => (
                         <article key={transaction.id} className="transaction-row">
                           <div>
                             <strong>{formatMoney(transaction.amount, settings)}</strong>
                             <span>{transaction.note || transaction.actor || 'Counter debit'}</span>
+                          </div>
+                          <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="history-panel">
+                  <div className="history-head">
+                    <h3>Top-up Details</h3>
+                  </div>
+                  {topups.length === 0 ? (
+                    <p>No top-ups yet.</p>
+                  ) : (
+                    <div className="transaction-list">
+                      {topups.map((transaction) => (
+                        <article key={transaction.id} className="transaction-row topup-row">
+                          <div>
+                            <strong>{formatMoney(transaction.amount, settings)}</strong>
+                            <span>{transaction.note || transaction.actor || 'Balance top-up'}</span>
                           </div>
                           <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
                         </article>

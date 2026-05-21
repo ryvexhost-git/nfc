@@ -159,6 +159,8 @@ function getCardSummary(db, card) {
   const today = todayKey();
   const dailyLimit = getDailyLimit(db);
   const transactions = getCardTransactions(db, card.id);
+  const debits = transactions.filter((transaction) => transaction.type === 'debit');
+  const topups = transactions.filter((transaction) => transaction.type === 'topup');
   const debitedToday = transactions
     .filter((transaction) => transaction.type === 'debit' && transaction.created_at.startsWith(today))
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -168,6 +170,8 @@ function getCardSummary(db, card) {
     settings: getPublicSettings(db.settings),
     debitedToday,
     remainingDailyLimit: Math.max(0, dailyLimit - debitedToday),
+    debits: debits.slice(-10).reverse(),
+    topups: topups.slice(-10).reverse(),
     transactions: transactions.slice(-10).reverse(),
   };
 }
