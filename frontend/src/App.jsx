@@ -206,7 +206,7 @@ function CustomerApp({ settings, setSettings }) {
                 <span className="label">Card Holder</span>
                 <h2>{card.holderName}</h2>
                 <p>{card.cardNumber}</p>
-                <span className={`position-badge ${card.position || 'regular'}`}>{card.position || 'regular'}</span>
+                {card.position && <span className="position-badge">{card.position}</span>}
               </div>
               <span className={`status-pill ${card.status}`}>{card.status}</span>
             </section>
@@ -330,7 +330,7 @@ function AdminApp({ settings, setSettings }) {
   const [nextCardNumber, setNextCardNumber] = useState('');
   const [activeCardId, setActiveCardId] = useState('');
   const [message, setMessage] = useState('');
-  const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: 'regular', password: '', balance: 0, status: 'active' });
+  const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
   const [passwordReset, setPasswordReset] = useState({ userId: '', password: '' });
@@ -419,7 +419,7 @@ function AdminApp({ settings, setSettings }) {
       });
       setCards((prev) => [...prev, data.card].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber)));
       setNextCardNumber(data.nextCardNumber);
-      setCardForm({ cardNumber: data.nextCardNumber, holderName: '', phone: '', position: 'regular', password: '', balance: 0, status: 'active' });
+      setCardForm({ cardNumber: data.nextCardNumber, holderName: '', phone: '', position: '', password: '', balance: 0, status: 'active' });
       await loadAdminData();
       setMessage('Card created');
     } catch (error) {
@@ -589,7 +589,7 @@ function AdminApp({ settings, setSettings }) {
               <label>Card number<input value={cardForm.cardNumber || nextCardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value })} /></label>
               <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} required /></label>
               <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} /></label>
-              <label>Position<select value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })}><option value="regular">regular</option><option value="premium">premium</option><option value="vip">vip</option></select></label>
+              <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
               <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} required /></label>
               <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} /></label>
               <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
@@ -689,11 +689,19 @@ function AdminApp({ settings, setSettings }) {
                     <td>{card.holderName}</td>
                     <td>{card.phone}</td>
                     <td>
-                      <select className="inline-select" value={card.position || 'regular'} onChange={(event) => { event.stopPropagation(); updateCard(card, { position: event.target.value }); }}>
-                        <option value="regular">regular</option>
-                        <option value="premium">premium</option>
-                        <option value="vip">vip</option>
-                      </select>
+                      <input
+                        className="inline-input"
+                        defaultValue={card.position || ''}
+                        onClick={(event) => event.stopPropagation()}
+                        onBlur={(event) => {
+                          const nextPosition = event.target.value.trim();
+                          if (nextPosition !== (card.position || '')) updateCard(card, { position: nextPosition });
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') event.currentTarget.blur();
+                        }}
+                        placeholder="Position"
+                      />
                     </td>
                     <td>{formatMoney(card.balance, settings)}</td>
                     <td><span className={`small-status ${card.status}`}>{card.status}</span></td>

@@ -173,12 +173,6 @@ select {
   text-transform: uppercase;
 }
 
-.position-badge.premium,
-.position-badge.vip {
-  background: rgba(250, 204, 21, 0.22);
-  border-color: rgba(250, 204, 21, 0.42);
-}
-
 .notice-box,
 .message-box {
   border-radius: 14px;
@@ -474,7 +468,7 @@ select {
 .field-grid select,
 .panel input,
 .panel select,
-.inline-select {
+.inline-input {
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(31, 48, 64, 0.16);
@@ -483,7 +477,7 @@ select {
   background: #ffffff;
 }
 
-.inline-select {
+.inline-input {
   min-width: 120px;
   padding: 0.45rem 0.5rem;
 }
