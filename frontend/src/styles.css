@@ -159,6 +159,26 @@ select {
   color: #ffffff;
 }
 
+.position-badge {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  padding: 0.34rem 0.62rem;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.position-badge.premium,
+.position-badge.vip {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: rgba(250, 204, 21, 0.42);
+}
+
 .notice-box,
 .message-box {
   border-radius: 14px;
@@ -453,13 +473,19 @@ select {
 .field-grid input,
 .field-grid select,
 .panel input,
-.panel select {
+.panel select,
+.inline-select {
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(31, 48, 64, 0.16);
   padding: 0.72rem 0.78rem;
   color: #16202a;
   background: #ffffff;
+}
+
+.inline-select {
+  min-width: 120px;
+  padding: 0.45rem 0.5rem;
 }
 
 .wide-field {

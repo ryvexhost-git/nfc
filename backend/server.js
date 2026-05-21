@@ -113,6 +113,7 @@ function getPublicCard(card, db) {
     cardNumber: card.card_number,
     holderName: card.holder_name,
     phone: card.phone,
+    position: card.position || 'regular',
     status: card.status,
     balance: Number(card.balance || 0),
     dailyLimit: getDailyLimit(db),
@@ -484,6 +485,7 @@ app.post('/api/admin/cards', requireAdmin, async (req, res) => {
     card_number: cardNumber,
     holder_name: req.body.holderName,
     phone: req.body.phone || '',
+    position: req.body.position || 'regular',
     password_hash: await bcrypt.hash(req.body.password, 10),
     balance: Number(req.body.balance || 0),
     status: req.body.status || 'active',
@@ -514,6 +516,7 @@ app.put('/api/admin/cards/:cardId', requireAdmin, async (req, res) => {
 
   card.holder_name = req.body.holderName || card.holder_name;
   card.phone = req.body.phone ?? card.phone;
+  card.position = req.body.position || card.position || 'regular';
   card.status = req.body.status || card.status;
   card.updated_at = new Date().toISOString();
 
