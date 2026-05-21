@@ -358,6 +358,33 @@ select {
   gap: 0.7rem;
 }
 
+.admin-nav {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  border: 1px solid rgba(31, 48, 64, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0.45rem;
+}
+
+.admin-nav button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(22, 32, 42, 0.72);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-weight: 900;
+  padding: 0.65rem 0.9rem;
+}
+
+.admin-nav button.active {
+  border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, #ffffff);
+  color: #16202a;
+}
+
 .account-menu {
   position: relative;
 }
@@ -494,6 +521,10 @@ select {
   padding: 1rem;
 }
 
+.standard-page {
+  max-width: 980px;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
@@ -505,6 +536,42 @@ select {
 .panel-head h2 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.panel-head p {
+  margin: 0.25rem 0 0;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.detail-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(31, 48, 64, 0.08);
+  padding-bottom: 0.75rem;
+}
+
+.detail-list div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.detail-list span {
+  color: rgba(22, 32, 42, 0.58);
+}
+
+.detail-list strong {
+  color: #16202a;
+  text-align: right;
+}
+
+.quick-actions {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .field-grid {
@@ -646,6 +713,10 @@ tr {
     left: 0;
     right: auto;
     width: 100%;
+  }
+
+  .admin-nav {
+    border-radius: 12px;
   }
 
   .stats-grid,

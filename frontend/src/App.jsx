@@ -326,6 +326,7 @@ function AdminApp({ settings, setSettings }) {
   const [login, setLogin] = useState({ username: 'admin', password: '' });
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [activeAdminPage, setActiveAdminPage] = useState('overview');
   const [cards, setCards] = useState([]);
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -529,6 +530,18 @@ function AdminApp({ settings, setSettings }) {
     setShowAccountMenu(false);
   };
 
+  const adminPages = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'business', label: 'Business' },
+    { id: 'cards', label: 'Cards' },
+    { id: 'topups', label: 'Top-ups' },
+    { id: 'transactions', label: 'Transactions' },
+    ...(currentAdmin?.role === 'admin' ? [{ id: 'users', label: 'Users' }] : []),
+  ];
+
+  const recentDebits = transactions.filter((transaction) => transaction.type === 'debit').slice(0, 12);
+  const recentTopups = transactions.filter((transaction) => transaction.type === 'topup').slice(0, 12);
+
   if (!token) {
     return (
       <main className="admin-screen">
@@ -578,180 +591,290 @@ function AdminApp({ settings, setSettings }) {
           </div>
         </header>
 
-        <section className="stats-grid">
-          <div><span>Total Cards</span><strong>{cards.length}</strong></div>
-          <div><span>Active Cards</span><strong>{cards.filter((card) => card.status === 'active').length}</strong></div>
-          <div><span>Total Balance</span><strong>{formatMoney(cards.reduce((sum, card) => sum + Number(card.balance), 0), settings)}</strong></div>
-          <div><span>Transactions</span><strong>{transactions.length}</strong></div>
-        </section>
+        <nav className="admin-nav" aria-label="Admin sections">
+          {adminPages.map((page) => (
+            <button
+              key={page.id}
+              className={activeAdminPage === page.id ? 'active' : ''}
+              type="button"
+              onClick={() => setActiveAdminPage(page.id)}
+            >
+              {page.label}
+            </button>
+          ))}
+        </nav>
 
-        <div className="admin-grid">
-          <form className="panel" onSubmit={saveSettings}>
+        {activeAdminPage === 'overview' && (
+          <>
+            <section className="stats-grid">
+              <div><span>Total Cards</span><strong>{cards.length}</strong></div>
+              <div><span>Active Cards</span><strong>{cards.filter((card) => card.status === 'active').length}</strong></div>
+              <div><span>Total Balance</span><strong>{formatMoney(cards.reduce((sum, card) => sum + Number(card.balance), 0), settings)}</strong></div>
+              <div><span>Transactions</span><strong>{transactions.length}</strong></div>
+            </section>
+
+            <div className="admin-grid">
+              <section className="panel">
+                <div className="panel-head">
+                  <h2>Business Profile</h2>
+                  <button type="button" onClick={() => setActiveAdminPage('business')}>Edit</button>
+                </div>
+                <div className="detail-list">
+                  <div><span>Business</span><strong>{settings.businessName || 'Not set'}</strong></div>
+                  <div><span>Card prefix</span><strong>{settings.cardPrefix || 'RYV'}</strong></div>
+                  <div><span>Daily debit limit</span><strong>{formatMoney(settings.dailyDebitLimit, settings)}</strong></div>
+                  <div><span>Support</span><strong>{settings.supportPhone || settings.supportEmail || 'Not set'}</strong></div>
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="panel-head">
+                  <h2>Quick Actions</h2>
+                </div>
+                <div className="quick-actions">
+                  <button type="button" onClick={() => setActiveAdminPage('cards')}>Create Card</button>
+                  <button type="button" onClick={() => setActiveAdminPage('topups')}>Top Up Balance</button>
+                  <button type="button" onClick={() => setActiveAdminPage('transactions')}>Export Report</button>
+                </div>
+              </section>
+            </div>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Recent Activity</h2>
+                <button type="button" onClick={() => setActiveAdminPage('transactions')}>View All</button>
+              </div>
+              <div className="transaction-list dashboard-transactions">
+                {transactions.slice(0, 8).length === 0 ? (
+                  <p className="muted">No transactions yet.</p>
+                ) : transactions.slice(0, 8).map((transaction) => (
+                  <article key={transaction.id} className="transaction-row">
+                    <div>
+                      <strong>{transaction.card_number} - {transaction.type}</strong>
+                      <span>{transaction.note || transaction.actor}</span>
+                    </div>
+                    <div className="amount-stack">
+                      <b>{formatMoney(transaction.amount, settings)}</b>
+                      <time>{new Date(transaction.created_at).toLocaleString('en-IN')}</time>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeAdminPage === 'business' && (
+          <form className="panel standard-page" onSubmit={saveSettings}>
             <div className="panel-head">
-              <h2>Business Settings</h2>
+              <div>
+                <h2>Business Settings</h2>
+                <p className="muted">These details appear on the customer card app and admin records.</p>
+              </div>
               <button type="submit">Save</button>
             </div>
             <div className="field-grid">
-              <label>Business name<input value={settings.businessName} onChange={(event) => setSettings({ ...settings, businessName: event.target.value })} /></label>
-              <label>Logo URL<input value={settings.logoUrl} onChange={(event) => setSettings({ ...settings, logoUrl: event.target.value })} placeholder="https://..." /></label>
+              <label>Business name<input value={settings.businessName} onChange={(event) => setSettings({ ...settings, businessName: event.target.value })} placeholder="Your business name" /></label>
+              <label>Logo URL<input value={settings.logoUrl} onChange={(event) => setSettings({ ...settings, logoUrl: event.target.value })} placeholder="https://example.com/logo.png" /></label>
               <label>Primary color<input type="color" value={settings.primaryColor} onChange={(event) => setSettings({ ...settings, primaryColor: event.target.value })} /></label>
-              <label>Currency symbol<input value={settings.currencySymbol} onChange={(event) => setSettings({ ...settings, currencySymbol: event.target.value })} /></label>
-              <label>Daily debit limit<input type="number" value={settings.dailyDebitLimit} onChange={(event) => setSettings({ ...settings, dailyDebitLimit: Number(event.target.value) })} /></label>
-              <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} /></label>
-              <label>Support phone<input value={settings.supportPhone} onChange={(event) => setSettings({ ...settings, supportPhone: event.target.value })} /></label>
-              <label>Support email<input value={settings.supportEmail} onChange={(event) => setSettings({ ...settings, supportEmail: event.target.value })} /></label>
-              <label className="wide-field">Address<input value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} /></label>
+              <label>Currency symbol<input value={settings.currencySymbol} onChange={(event) => setSettings({ ...settings, currencySymbol: event.target.value })} placeholder="Rs." /></label>
+              <label>Daily debit limit<input type="number" value={settings.dailyDebitLimit} onChange={(event) => setSettings({ ...settings, dailyDebitLimit: Number(event.target.value) })} placeholder="50" /></label>
+              <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} placeholder="RYV" /></label>
+              <label>Support phone<input value={settings.supportPhone} onChange={(event) => setSettings({ ...settings, supportPhone: event.target.value })} placeholder="Business phone number" /></label>
+              <label>Support email<input value={settings.supportEmail} onChange={(event) => setSettings({ ...settings, supportEmail: event.target.value })} placeholder="support@example.com" /></label>
+              <label className="wide-field">Address<input value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} placeholder="Business address" /></label>
             </div>
           </form>
+        )}
 
-          <form className="panel" onSubmit={createCard}>
-            <div className="panel-head">
-              <h2>Create Card</h2>
-              <button type="submit">Create</button>
-            </div>
-            <div className="field-grid">
-              <label>Card number<input value={cardForm.cardNumber || nextCardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value })} /></label>
-              <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} required /></label>
-              <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} /></label>
-              <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
-              <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} required /></label>
-              <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} /></label>
-              <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
-            </div>
-          </form>
-        </div>
-
-        <div className="admin-grid">
-          <form className="panel" onSubmit={createUser}>
-            <div className="panel-head">
-              <h2>Create Manager User</h2>
-              <button type="submit">Create</button>
-            </div>
-            <div className="field-grid">
-              <label>Username<input value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} required /></label>
-              <label>Name<input value={userForm.name} onChange={(event) => setUserForm({ ...userForm, name: event.target.value })} required /></label>
-              <label>Password<input value={userForm.password} onChange={(event) => setUserForm({ ...userForm, password: event.target.value })} required /></label>
-              <label>Role<select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}><option value="manager">manager</option><option value="admin">admin</option></select></label>
-            </div>
-          </form>
-        </div>
-
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Admin & Manager Users</h2>
-            <span className="muted">Disable old manager logins.</span>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.username}</td>
-                    <td>{user.name}</td>
-                    <td>{user.role}</td>
-                    <td><span className={`small-status ${user.active ? 'active' : 'blocked'}`}>{user.active ? 'active' : 'disabled'}</span></td>
-                    <td>
-                      <button className="table-button danger-button" type="button" disabled={!user.active || user.username === 'admin'} onClick={() => deleteUser(user.id)}>Disable</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <div className="admin-grid">
-          <form className="panel" onSubmit={topUpCard}>
-            <div className="panel-head">
-              <h2>Balance Top-up</h2>
-              <button type="submit">Top Up</button>
-            </div>
-            <div className="field-grid">
-              <label>Card<select value={topUpForm.cardId} onChange={(event) => setTopUpForm({ ...topUpForm, cardId: event.target.value })}><option value="">Select card</option>{cards.map((card) => <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>)}</select></label>
-              <label>Amount<input type="number" value={topUpForm.amount} onChange={(event) => setTopUpForm({ ...topUpForm, amount: event.target.value })} /></label>
-              <label className="wide-field">Note<input value={topUpForm.note} onChange={(event) => setTopUpForm({ ...topUpForm, note: event.target.value })} placeholder="Cash reload, UPI reload..." /></label>
-            </div>
-          </form>
-
-          <section className="panel">
-            <div className="panel-head">
-              <h2>Transaction Export</h2>
-              <button type="button" onClick={exportTransactions}>Export CSV</button>
-            </div>
-            <p className="muted">Download all debits and top-ups as a CSV file for accounts, audit, or reporting.</p>
-          </section>
-        </div>
-
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Cards</h2>
-            <span className="muted">Tap a row to select it for quick top-up.</span>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {cards.map((card) => (
-                  <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
-                    <td>{card.cardNumber}</td>
-                    <td>{card.holderName}</td>
-                    <td>{card.phone}</td>
-                    <td>
-                      <input
-                        className="inline-input"
-                        defaultValue={card.position || ''}
-                        onClick={(event) => event.stopPropagation()}
-                        onBlur={(event) => {
-                          const nextPosition = event.target.value.trim();
-                          if (nextPosition !== (card.position || '')) updateCard(card, { position: nextPosition });
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') event.currentTarget.blur();
-                        }}
-                        placeholder="Position"
-                      />
-                    </td>
-                    <td>{formatMoney(card.balance, settings)}</td>
-                    <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
-                    <td>
-                      <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
-                        {card.status === 'active' ? 'Block' : 'Activate'}
-                      </button>
-                      <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Recent Transactions</h2>
-          </div>
-          <div className="transaction-list dashboard-transactions">
-            {transactions.slice(0, 12).map((transaction) => (
-              <article key={transaction.id} className="transaction-row">
+        {activeAdminPage === 'cards' && (
+          <>
+            <form className="panel standard-page" onSubmit={createCard}>
+              <div className="panel-head">
                 <div>
-                  <strong>{transaction.card_number} - {transaction.type}</strong>
-                  <span>{transaction.note || transaction.actor}</span>
+                  <h2>Create Card</h2>
+                  <p className="muted">Use the generated card number or enter one manually for a mapped NFC card.</p>
                 </div>
-                <div className="amount-stack">
-                  <b>{formatMoney(transaction.amount, settings)}</b>
-                  <time>{new Date(transaction.created_at).toLocaleString('en-IN')}</time>
+                <button type="submit">Create</button>
+              </div>
+              <div className="field-grid">
+                <label>Card number<input value={cardForm.cardNumber || nextCardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value })} placeholder={nextCardNumber} /></label>
+                <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} placeholder="Customer full name" required /></label>
+                <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} placeholder="Customer mobile number" /></label>
+                <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
+                <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} placeholder="Card login password" required /></label>
+                <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} placeholder="0" /></label>
+                <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
+              </div>
+            </form>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Card List</h2>
+                <span className="muted">Tap a row to select it for top-up.</span>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+                  </thead>
+                  <tbody>
+                    {cards.map((card) => (
+                      <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
+                        <td>{card.cardNumber}</td>
+                        <td>{card.holderName}</td>
+                        <td>{card.phone}</td>
+                        <td>
+                          <input
+                            className="inline-input"
+                            defaultValue={card.position || ''}
+                            onClick={(event) => event.stopPropagation()}
+                            onBlur={(event) => {
+                              const nextPosition = event.target.value.trim();
+                              if (nextPosition !== (card.position || '')) updateCard(card, { position: nextPosition });
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') event.currentTarget.blur();
+                            }}
+                            placeholder="Position"
+                          />
+                        </td>
+                        <td>{formatMoney(card.balance, settings)}</td>
+                        <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
+                        <td>
+                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
+                            {card.status === 'active' ? 'Block' : 'Activate'}
+                          </button>
+                          <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeAdminPage === 'topups' && (
+          <div className="admin-grid">
+            <form className="panel" onSubmit={topUpCard}>
+              <div className="panel-head">
+                <div>
+                  <h2>Balance Top-up</h2>
+                  <p className="muted">Add balance to an existing NFC card.</p>
                 </div>
-              </article>
-            ))}
+                <button type="submit">Top Up</button>
+              </div>
+              <div className="field-grid">
+                <label>Card<select value={topUpForm.cardId} onChange={(event) => setTopUpForm({ ...topUpForm, cardId: event.target.value })}><option value="">Select card</option>{cards.map((card) => <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>)}</select></label>
+                <label>Amount<input type="number" value={topUpForm.amount} onChange={(event) => setTopUpForm({ ...topUpForm, amount: event.target.value })} placeholder="100" /></label>
+                <label className="wide-field">Note<input value={topUpForm.note} onChange={(event) => setTopUpForm({ ...topUpForm, note: event.target.value })} placeholder="Cash reload, UPI reload..." /></label>
+              </div>
+            </form>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Top-up Details</h2>
+              </div>
+              <div className="transaction-list dashboard-transactions">
+                {recentTopups.length === 0 ? (
+                  <p className="muted">No top-ups yet.</p>
+                ) : recentTopups.map((transaction) => (
+                  <article key={transaction.id} className="transaction-row topup-row">
+                    <div>
+                      <strong>{transaction.card_number}</strong>
+                      <span>{transaction.note || transaction.actor || 'Balance top-up'}</span>
+                    </div>
+                    <div className="amount-stack">
+                      <b>{formatMoney(transaction.amount, settings)}</b>
+                      <time>{new Date(transaction.created_at).toLocaleString('en-IN')}</time>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
-        </section>
+        )}
+
+        {activeAdminPage === 'transactions' && (
+          <>
+            <section className="panel">
+              <div className="panel-head">
+                <div>
+                  <h2>Debit Transactions</h2>
+                  <p className="muted">Top-ups are shown separately in the Top-ups page.</p>
+                </div>
+                <button type="button" onClick={exportTransactions}>Export CSV</button>
+              </div>
+              <div className="transaction-list dashboard-transactions">
+                {recentDebits.length === 0 ? (
+                  <p className="muted">No debits yet.</p>
+                ) : recentDebits.map((transaction) => (
+                  <article key={transaction.id} className="transaction-row">
+                    <div>
+                      <strong>{transaction.card_number}</strong>
+                      <span>{transaction.note || transaction.actor || 'Counter debit'}</span>
+                    </div>
+                    <div className="amount-stack">
+                      <b>{formatMoney(transaction.amount, settings)}</b>
+                      <time>{new Date(transaction.created_at).toLocaleString('en-IN')}</time>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeAdminPage === 'users' && currentAdmin?.role === 'admin' && (
+          <>
+            <form className="panel standard-page" onSubmit={createUser}>
+              <div className="panel-head">
+                <div>
+                  <h2>Create Admin or Manager</h2>
+                  <p className="muted">Create staff logins for operating the NFC wallet system.</p>
+                </div>
+                <button type="submit">Create</button>
+              </div>
+              <div className="field-grid">
+                <label>Username<input value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} placeholder="manager01" required /></label>
+                <label>Name<input value={userForm.name} onChange={(event) => setUserForm({ ...userForm, name: event.target.value })} placeholder="Staff name" required /></label>
+                <label>Password<input value={userForm.password} onChange={(event) => setUserForm({ ...userForm, password: event.target.value })} placeholder="Temporary password" required /></label>
+                <label>Role<select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}><option value="manager">manager</option><option value="admin">admin</option></select></label>
+              </div>
+            </form>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Admin & Manager Users</h2>
+                <span className="muted">Disable old manager logins.</span>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.username}</td>
+                        <td>{user.name}</td>
+                        <td>{user.role}</td>
+                        <td><span className={`small-status ${user.active ? 'active' : 'blocked'}`}>{user.active ? 'active' : 'disabled'}</span></td>
+                        <td>
+                          <button className="table-button danger-button" type="button" disabled={!user.active || user.username === 'admin'} onClick={() => deleteUser(user.id)}>Disable</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
+        )}
 
         {message && <p className="message-box floating-message">{message}</p>}
       </section>
