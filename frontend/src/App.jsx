@@ -324,6 +324,8 @@ function CustomerApp({ settings, setSettings }) {
 function AdminApp({ settings, setSettings }) {
   const [token, setToken] = useState(getAdminToken());
   const [login, setLogin] = useState({ username: 'admin', password: '' });
+  const [currentAdmin, setCurrentAdmin] = useState(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [cards, setCards] = useState([]);
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -333,7 +335,7 @@ function AdminApp({ settings, setSettings }) {
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
-  const [passwordReset, setPasswordReset] = useState({ userId: '', password: '' });
+  const [accountPassword, setAccountPassword] = useState('');
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -359,12 +361,14 @@ function AdminApp({ settings, setSettings }) {
 
   const loadAdminData = async () => {
     try {
-      const [settingsData, cardsData, txData, usersData] = await Promise.all([
+      const [meData, settingsData, cardsData, txData] = await Promise.all([
+        apiJson('/admin/me'),
         apiJson('/admin/settings'),
         apiJson('/admin/cards'),
         apiJson('/admin/transactions'),
-        apiJson('/admin/users'),
       ]);
+      const usersData = meData.admin?.role === 'admin' ? await apiJson('/admin/users') : { users: [{ ...meData.admin, active: true }] };
+      setCurrentAdmin(meData.admin);
       setSettings(settingsData.settings);
       setCards(cardsData.cards);
       setTransactions(txData.transactions);
@@ -385,6 +389,7 @@ function AdminApp({ settings, setSettings }) {
       });
       localStorage.setItem('nfc_ryv_admin_token', data.token);
       setToken(data.token);
+      setCurrentAdmin(data.admin);
       setSettings(data.settings);
       setMessage('Admin signed in');
     } catch (error) {
@@ -474,18 +479,19 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
-  const resetUserPassword = async (event) => {
+  const resetOwnPassword = async (event) => {
     event.preventDefault();
-    if (!passwordReset.userId) {
-      setMessage('Choose a user to reset password');
+    if (!accountPassword) {
+      setMessage('Enter a new password');
       return;
     }
     try {
-      await apiJson(`/admin/users/${passwordReset.userId}/password`, {
+      await apiJson('/admin/me/password', {
         method: 'PUT',
-        body: JSON.stringify({ password: passwordReset.password }),
+        body: JSON.stringify({ password: accountPassword }),
       });
-      setPasswordReset({ userId: '', password: '' });
+      setAccountPassword('');
+      setShowAccountMenu(false);
       setMessage('Password reset successfully');
     } catch (error) {
       setMessage(error.message);
@@ -519,6 +525,8 @@ function AdminApp({ settings, setSettings }) {
   const logout = () => {
     localStorage.removeItem('nfc_ryv_admin_token');
     setToken(null);
+    setCurrentAdmin(null);
+    setShowAccountMenu(false);
   };
 
   if (!token) {
@@ -550,7 +558,23 @@ function AdminApp({ settings, setSettings }) {
           <Brand settings={settings} />
           <div className="topbar-actions">
             <a className="ghost-button" href="/" target="_blank">Open card app</a>
-            <button className="ghost-button" type="button" onClick={logout}>Logout</button>
+            <div className="account-menu">
+              <button className="ghost-button account-trigger" type="button" onClick={() => setShowAccountMenu((value) => !value)}>
+                {currentAdmin?.name || currentAdmin?.username || 'Admin'}
+              </button>
+              {showAccountMenu && (
+                <div className="account-popover">
+                  <form onSubmit={resetOwnPassword}>
+                    <label>
+                      Reset password
+                      <input type="password" value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} placeholder="New password" required />
+                    </label>
+                    <button type="submit">Reset Password</button>
+                  </form>
+                  <button className="logout-option" type="button" onClick={logout}>Logout</button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -610,23 +634,12 @@ function AdminApp({ settings, setSettings }) {
               <label>Role<select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}><option value="manager">manager</option><option value="admin">admin</option></select></label>
             </div>
           </form>
-
-          <form className="panel" onSubmit={resetUserPassword}>
-            <div className="panel-head">
-              <h2>Admin Password Reset</h2>
-              <button type="submit">Reset</button>
-            </div>
-            <div className="field-grid">
-              <label>User<select value={passwordReset.userId} onChange={(event) => setPasswordReset({ ...passwordReset, userId: event.target.value })}><option value="">Select user</option>{users.filter((user) => user.active).map((user) => <option key={user.id} value={user.id}>{user.username} - {user.role}</option>)}</select></label>
-              <label>New password<input value={passwordReset.password} onChange={(event) => setPasswordReset({ ...passwordReset, password: event.target.value })} required /></label>
-            </div>
-          </form>
         </div>
 
         <section className="panel">
           <div className="panel-head">
             <h2>Admin & Manager Users</h2>
-            <span className="muted">Disable old manager logins and reset passwords.</span>
+            <span className="muted">Disable old manager logins.</span>
           </div>
           <div className="table-wrap">
             <table>

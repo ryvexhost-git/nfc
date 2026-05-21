@@ -358,6 +358,67 @@ select {
   gap: 0.7rem;
 }
 
+.account-menu {
+  position: relative;
+}
+
+.account-trigger {
+  min-width: 96px;
+}
+
+.account-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 20;
+  width: min(300px, calc(100vw - 2rem));
+  border: 1px solid rgba(31, 48, 64, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(22, 32, 42, 0.16);
+  padding: 0.8rem;
+}
+
+.account-popover form {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.account-popover label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(22, 32, 42, 0.66);
+}
+
+.account-popover input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 48, 64, 0.16);
+  padding: 0.68rem 0.75rem;
+  color: #16202a;
+}
+
+.account-popover button {
+  width: 100%;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: var(--primary);
+  color: #ffffff;
+  padding: 0.65rem 0.8rem;
+  font-weight: 900;
+}
+
+.account-popover .logout-option {
+  border-color: rgba(31, 48, 64, 0.14);
+  background: #ffffff;
+  color: #16202a;
+}
+
 .ghost-button,
 .panel button,
 .table-button {
@@ -579,6 +640,12 @@ tr {
   .topbar-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .account-popover {
+    left: 0;
+    right: auto;
+    width: 100%;
   }
 
   .stats-grid,

@@ -359,6 +359,19 @@ app.get('/api/admin/me', requireAdmin, (req, res) => {
   });
 });
 
+app.put('/api/admin/me/password', requireAdmin, async (req, res) => {
+  const db = readDb();
+  const admin = db.admins.find((item) => item.id === req.admin.adminId);
+  if (!admin) return res.status(404).json({ error: 'Admin user not found' });
+  if (!req.body.password) return res.status(400).json({ error: 'New password is required' });
+
+  admin.password_hash = await bcrypt.hash(req.body.password, 10);
+  admin.updated_at = new Date().toISOString();
+  writeDb(db);
+
+  res.json({ success: true });
+});
+
 app.get('/api/admin/users', requireAdmin, requireOwnerAdmin, (req, res) => {
   const db = readDb();
   const users = db.admins.map((admin) => ({
