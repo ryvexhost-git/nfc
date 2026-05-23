@@ -1,14 +1,27 @@
 {
   "settings": {
     "businessName": "NFC-RYV",
+    "legalName": "",
     "logoUrl": "",
     "primaryColor": "#0f766e",
     "supportPhone": "9999999999",
     "supportEmail": "support@example.com",
+    "websiteUrl": "",
     "address": "Business address",
+    "gstNumber": "",
     "currencySymbol": "Rs.",
     "dailyDebitLimit": 50,
-    "cardPrefix": "RYV"
+    "lowBalanceThreshold": 50,
+    "maxCardBalance": 5000,
+    "openingBalanceDefault": 0,
+    "cardPrefix": "RYV",
+    "nfcBaseUrl": "",
+    "invoicePrefix": "NFC",
+    "timezone": "Asia/Kolkata",
+    "receiptFooter": "",
+    "termsText": "",
+    "enableCustomerPhoto": true,
+    "requireExecutiveName": true
   },
   "admins": [
     {

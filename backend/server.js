@@ -25,14 +25,27 @@ app.use(express.json({ limit: '6mb' }));
 
 const defaultSettings = {
   businessName: 'NFC-RYV',
+  legalName: '',
   logoUrl: '',
   primaryColor: '#0f766e',
   supportPhone: '9999999999',
   supportEmail: 'support@example.com',
+  websiteUrl: '',
   address: 'Business address',
+  gstNumber: '',
   currencySymbol: 'Rs.',
   dailyDebitLimit: DEFAULT_DAILY_LIMIT,
+  lowBalanceThreshold: 50,
+  maxCardBalance: 5000,
+  openingBalanceDefault: 0,
   cardPrefix: 'RYV',
+  nfcBaseUrl: '',
+  invoicePrefix: 'NFC',
+  timezone: 'Asia/Kolkata',
+  receiptFooter: '',
+  termsText: '',
+  enableCustomerPhoto: true,
+  requireExecutiveName: true,
 };
 
 const defaultAdmin = {
@@ -101,14 +114,27 @@ function getCardById(db, cardId) {
 function getPublicSettings(settings) {
   return {
     businessName: settings.businessName,
+    legalName: settings.legalName,
     logoUrl: settings.logoUrl,
     primaryColor: settings.primaryColor,
     supportPhone: settings.supportPhone,
     supportEmail: settings.supportEmail,
+    websiteUrl: settings.websiteUrl,
     address: settings.address,
+    gstNumber: settings.gstNumber,
     currencySymbol: settings.currencySymbol,
     dailyDebitLimit: Number(settings.dailyDebitLimit),
+    lowBalanceThreshold: Number(settings.lowBalanceThreshold),
+    maxCardBalance: Number(settings.maxCardBalance),
+    openingBalanceDefault: Number(settings.openingBalanceDefault),
     cardPrefix: settings.cardPrefix,
+    nfcBaseUrl: settings.nfcBaseUrl,
+    invoicePrefix: settings.invoicePrefix,
+    timezone: settings.timezone,
+    receiptFooter: settings.receiptFooter,
+    termsText: settings.termsText,
+    enableCustomerPhoto: settings.enableCustomerPhoto !== false,
+    requireExecutiveName: settings.requireExecutiveName !== false,
   };
 }
 
@@ -459,14 +485,27 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   const nextSettings = {
     ...db.settings,
     businessName: req.body.businessName || db.settings.businessName,
+    legalName: req.body.legalName || '',
     logoUrl: req.body.logoUrl || '',
     primaryColor: req.body.primaryColor || db.settings.primaryColor,
     supportPhone: req.body.supportPhone || '',
     supportEmail: req.body.supportEmail || '',
+    websiteUrl: req.body.websiteUrl || '',
     address: req.body.address || '',
+    gstNumber: req.body.gstNumber || '',
     currencySymbol: req.body.currencySymbol || db.settings.currencySymbol,
     dailyDebitLimit: Number(req.body.dailyDebitLimit || db.settings.dailyDebitLimit),
+    lowBalanceThreshold: Number(req.body.lowBalanceThreshold || db.settings.lowBalanceThreshold || 50),
+    maxCardBalance: Number(req.body.maxCardBalance || db.settings.maxCardBalance || 5000),
+    openingBalanceDefault: Number(req.body.openingBalanceDefault || 0),
     cardPrefix: normalizeCardPrefix(req.body.cardPrefix || db.settings.cardPrefix),
+    nfcBaseUrl: req.body.nfcBaseUrl || '',
+    invoicePrefix: req.body.invoicePrefix || db.settings.invoicePrefix || 'NFC',
+    timezone: req.body.timezone || db.settings.timezone || 'Asia/Kolkata',
+    receiptFooter: req.body.receiptFooter || '',
+    termsText: req.body.termsText || '',
+    enableCustomerPhoto: req.body.enableCustomerPhoto !== false,
+    requireExecutiveName: req.body.requireExecutiveName !== false,
   };
 
   db.settings = nextSettings;

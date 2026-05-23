@@ -350,6 +350,22 @@ select {
   font-size: 0.82rem;
 }
 
+.customer-note {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding-top: 0.85rem;
+}
+
+.customer-note p {
+  margin: 0 0 0.4rem;
+}
+
+.customer-note p:last-child {
+  margin-bottom: 0;
+}
+
 .admin-screen {
   min-height: 100vh;
   background:
@@ -550,6 +566,10 @@ select {
   max-width: 980px;
 }
 
+.advanced-settings {
+  max-width: 1120px;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
@@ -606,6 +626,21 @@ select {
   font-size: 0.82rem;
 }
 
+.settings-section {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.settings-section + .settings-section {
+  margin-top: 1.2rem;
+}
+
+.settings-section h3 {
+  margin: 0 0 0.9rem;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
 .filter-bar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(150px, 210px);
@@ -651,8 +686,10 @@ select {
 
 .field-grid input,
 .field-grid select,
+.field-grid textarea,
 .panel input,
 .panel select,
+.panel textarea,
 .inline-input {
   width: 100%;
   border-radius: 10px;
@@ -660,6 +697,44 @@ select {
   padding: 0.72rem 0.78rem;
   color: var(--ink);
   background: #fffaf3;
+}
+
+.field-grid textarea,
+.panel textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.field-grid .toggle-row {
+  align-items: center;
+  flex-direction: row;
+  justify-content: flex-start;
+  min-height: 44px;
+}
+
+.toggle-row input {
+  width: auto;
+  accent-color: var(--primary);
+}
+
+.settings-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+.settings-summary span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fffaf3;
+  color: var(--muted);
+  padding: 0.48rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.settings-summary strong {
+  color: var(--ink);
 }
 
 .inline-input {

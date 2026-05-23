@@ -5,14 +5,27 @@ const DEFAULT_CARD_ID = 'RYV-001';
 
 const defaultSettings = {
   businessName: 'NFC-RYV',
+  legalName: '',
   logoUrl: '',
   primaryColor: '#0f766e',
   supportPhone: '',
   supportEmail: '',
+  websiteUrl: '',
   address: '',
+  gstNumber: '',
   currencySymbol: 'Rs.',
   dailyDebitLimit: 50,
+  lowBalanceThreshold: 50,
+  maxCardBalance: 5000,
+  openingBalanceDefault: 0,
   cardPrefix: 'RYV',
+  nfcBaseUrl: '',
+  invoicePrefix: 'NFC',
+  timezone: 'Asia/Kolkata',
+  receiptFooter: '',
+  termsText: '',
+  enableCustomerPhoto: true,
+  requireExecutiveName: true,
 };
 
 function formatMoney(value, settings) {
@@ -216,11 +229,11 @@ function CustomerApp({ settings, setSettings }) {
                 <p>{card.cardNumber}</p>
                 {card.position && <span className="position-badge">{card.position}</span>}
               </div>
-              {card.photoUrl ? (
+              {settings.enableCustomerPhoto !== false && card.photoUrl ? (
                 <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
-              ) : (
+              ) : settings.enableCustomerPhoto !== false ? (
                 <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
-              )}
+              ) : null}
               <span className={`status-pill ${card.status}`}>{card.status}</span>
             </section>
 
@@ -253,7 +266,7 @@ function CustomerApp({ settings, setSettings }) {
                 <form className="form-panel" onSubmit={handleDebit}>
                   <label>
                     Executive name
-                    <input type="text" value={executiveName} onChange={(event) => setExecutiveName(event.target.value)} placeholder="Counter executive" />
+                    <input type="text" value={executiveName} onChange={(event) => setExecutiveName(event.target.value)} placeholder="Counter executive" required={settings.requireExecutiveName !== false} />
                   </label>
                   <label>
                     Debit amount
@@ -325,7 +338,15 @@ function CustomerApp({ settings, setSettings }) {
           <footer className="support-footer">
             {settings.supportPhone && <span>{settings.supportPhone}</span>}
             {settings.supportEmail && <span>{settings.supportEmail}</span>}
+            {settings.websiteUrl && <span>{settings.websiteUrl}</span>}
           </footer>
+        )}
+
+        {(settings.termsText || settings.receiptFooter) && (
+          <div className="customer-note">
+            {settings.termsText && <p>{settings.termsText}</p>}
+            {settings.receiptFooter && <p>{settings.receiptFooter}</p>}
+          </div>
         )}
 
         {message && <p className="message-box">{message}</p>}
@@ -488,6 +509,12 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Choose a card to top up');
       return;
     }
+    const selectedCard = cards.find((card) => card.id === topUpForm.cardId);
+    const nextBalance = Number(selectedCard?.balance || 0) + Number(topUpForm.amount || 0);
+    if (Number(settings.maxCardBalance || 0) > 0 && nextBalance > Number(settings.maxCardBalance)) {
+      setMessage(`Maximum card balance is ${formatMoney(settings.maxCardBalance, settings)}`);
+      return;
+    }
     try {
       await apiJson(`/admin/cards/${topUpForm.cardId}/topup`, {
         method: 'POST',
@@ -560,7 +587,8 @@ function AdminApp({ settings, setSettings }) {
   };
 
   const copyCardLink = async (cardNumber) => {
-    const link = `${window.location.origin}/${cardNumber}`;
+    const baseUrl = String(settings.nfcBaseUrl || window.location.origin).replace(/\/$/, '');
+    const link = `${baseUrl}/${cardNumber}`;
     try {
       await navigator.clipboard.writeText(link);
       setMessage('NFC card link copied');
@@ -587,7 +615,7 @@ function AdminApp({ settings, setSettings }) {
 
   const recentDebits = transactions.filter((transaction) => transaction.type === 'debit').slice(0, 12);
   const recentTopups = transactions.filter((transaction) => transaction.type === 'topup').slice(0, 12);
-  const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < Number(settings.dailyDebitLimit || 50));
+  const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < Number(settings.lowBalanceThreshold || settings.dailyDebitLimit || 50));
   const filteredCards = cards.filter((card) => {
     const search = cardSearch.trim().toLowerCase();
     const matchesSearch = !search
@@ -732,24 +760,64 @@ function AdminApp({ settings, setSettings }) {
         )}
 
         {activeAdminPage === 'business' && (
-          <form className="panel standard-page" onSubmit={saveSettings}>
+          <form className="panel standard-page advanced-settings" onSubmit={saveSettings}>
             <div className="panel-head">
               <div>
                 <h2>Business Settings</h2>
-                <p className="muted">These details appear on the customer card app and admin records.</p>
+                <p className="muted">Manage brand identity, wallet rules, NFC defaults, and report details.</p>
               </div>
               <button type="submit">Save</button>
             </div>
-            <div className="field-grid">
-              <label>Business name<input value={settings.businessName} onChange={(event) => setSettings({ ...settings, businessName: event.target.value })} placeholder="Your business name" /></label>
-              <label>Logo URL<input value={settings.logoUrl} onChange={(event) => setSettings({ ...settings, logoUrl: event.target.value })} placeholder="https://example.com/logo.png" /></label>
-              <label>Primary color<input type="color" value={settings.primaryColor} onChange={(event) => setSettings({ ...settings, primaryColor: event.target.value })} /></label>
-              <label>Currency symbol<input value={settings.currencySymbol} onChange={(event) => setSettings({ ...settings, currencySymbol: event.target.value })} placeholder="Rs." /></label>
-              <label>Daily debit limit<input type="number" value={settings.dailyDebitLimit} onChange={(event) => setSettings({ ...settings, dailyDebitLimit: Number(event.target.value) })} placeholder="50" /></label>
-              <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} placeholder="RYV" /></label>
-              <label>Support phone<input value={settings.supportPhone} onChange={(event) => setSettings({ ...settings, supportPhone: event.target.value })} placeholder="Business phone number" /></label>
-              <label>Support email<input value={settings.supportEmail} onChange={(event) => setSettings({ ...settings, supportEmail: event.target.value })} placeholder="support@example.com" /></label>
-              <label className="wide-field">Address<input value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} placeholder="Business address" /></label>
+
+            <section className="settings-section">
+              <h3>Brand & Public Profile</h3>
+              <div className="field-grid">
+                <label>Business name<input value={settings.businessName} onChange={(event) => setSettings({ ...settings, businessName: event.target.value })} placeholder="Your business name" /></label>
+                <label>Legal name<input value={settings.legalName} onChange={(event) => setSettings({ ...settings, legalName: event.target.value })} placeholder="Registered legal name" /></label>
+                <label>Logo URL<input value={settings.logoUrl} onChange={(event) => setSettings({ ...settings, logoUrl: event.target.value })} placeholder="https://example.com/logo.png" /></label>
+                <label>Primary color<input type="color" value={settings.primaryColor} onChange={(event) => setSettings({ ...settings, primaryColor: event.target.value })} /></label>
+                <label>Website URL<input value={settings.websiteUrl} onChange={(event) => setSettings({ ...settings, websiteUrl: event.target.value })} placeholder="https://yourbusiness.com" /></label>
+                <label>GST / Tax ID<input value={settings.gstNumber} onChange={(event) => setSettings({ ...settings, gstNumber: event.target.value.toUpperCase() })} placeholder="GSTIN or tax number" /></label>
+                <label>Support phone<input value={settings.supportPhone} onChange={(event) => setSettings({ ...settings, supportPhone: event.target.value })} placeholder="Business phone number" /></label>
+                <label>Support email<input value={settings.supportEmail} onChange={(event) => setSettings({ ...settings, supportEmail: event.target.value })} placeholder="support@example.com" /></label>
+                <label className="wide-field">Address<textarea value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} placeholder="Business address" rows="3" /></label>
+              </div>
+            </section>
+
+            <section className="settings-section">
+              <h3>Wallet Rules</h3>
+              <div className="field-grid">
+                <label>Currency symbol<input value={settings.currencySymbol} onChange={(event) => setSettings({ ...settings, currencySymbol: event.target.value })} placeholder="Rs." /></label>
+                <label>Daily debit limit<input type="number" value={settings.dailyDebitLimit} onChange={(event) => setSettings({ ...settings, dailyDebitLimit: Number(event.target.value) })} placeholder="50" /></label>
+                <label>Low balance alert<input type="number" value={settings.lowBalanceThreshold} onChange={(event) => setSettings({ ...settings, lowBalanceThreshold: Number(event.target.value) })} placeholder="50" /></label>
+                <label>Maximum card balance<input type="number" value={settings.maxCardBalance} onChange={(event) => setSettings({ ...settings, maxCardBalance: Number(event.target.value) })} placeholder="5000" /></label>
+                <label>Default opening balance<input type="number" value={settings.openingBalanceDefault} onChange={(event) => setSettings({ ...settings, openingBalanceDefault: Number(event.target.value) })} placeholder="0" /></label>
+                <label>Timezone<input value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} placeholder="Asia/Kolkata" /></label>
+              </div>
+            </section>
+
+            <section className="settings-section">
+              <h3>NFC & Card Defaults</h3>
+              <div className="field-grid">
+                <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} placeholder="RYV" /></label>
+                <label>NFC base URL<input value={settings.nfcBaseUrl} onChange={(event) => setSettings({ ...settings, nfcBaseUrl: event.target.value })} placeholder="https://nfc.domain.com" /></label>
+                <label>Invoice prefix<input value={settings.invoicePrefix} onChange={(event) => setSettings({ ...settings, invoicePrefix: event.target.value.toUpperCase() })} placeholder="NFC" /></label>
+                <label className="toggle-row"><input type="checkbox" checked={settings.enableCustomerPhoto !== false} onChange={(event) => setSettings({ ...settings, enableCustomerPhoto: event.target.checked })} /> Enable customer photo</label>
+                <label className="toggle-row"><input type="checkbox" checked={settings.requireExecutiveName !== false} onChange={(event) => setSettings({ ...settings, requireExecutiveName: event.target.checked })} /> Require executive name</label>
+              </div>
+            </section>
+
+            <section className="settings-section">
+              <h3>Receipts & Customer Notes</h3>
+              <div className="field-grid">
+                <label className="wide-field">Receipt footer<textarea value={settings.receiptFooter} onChange={(event) => setSettings({ ...settings, receiptFooter: event.target.value })} placeholder="Thank you for visiting." rows="3" /></label>
+                <label className="wide-field">Terms / customer note<textarea value={settings.termsText} onChange={(event) => setSettings({ ...settings, termsText: event.target.value })} placeholder="Balance is usable only at this business." rows="3" /></label>
+              </div>
+            </section>
+
+            <div className="settings-summary">
+              <span>Next card number: <strong>{nextCardNumber || `${settings.cardPrefix || 'RYV'}-001`}</strong></span>
+              <span>Low balance below: <strong>{formatMoney(settings.lowBalanceThreshold, settings)}</strong></span>
             </div>
           </form>
         )}
@@ -769,11 +837,11 @@ function AdminApp({ settings, setSettings }) {
                 <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} placeholder="Customer full name" required /></label>
                 <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} placeholder="Customer mobile number" /></label>
                 <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
-                <label>Customer photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event, (photoUrl) => setCardForm((prev) => ({ ...prev, photoUrl })))} /></label>
+                {settings.enableCustomerPhoto !== false && <label>Customer photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event, (photoUrl) => setCardForm((prev) => ({ ...prev, photoUrl })))} /></label>}
                 <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} placeholder="Card login password" required /></label>
                 <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} placeholder="0" /></label>
                 <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
-                {cardForm.photoUrl && (
+                {settings.enableCustomerPhoto !== false && cardForm.photoUrl && (
                   <div className="photo-preview">
                     <img src={cardForm.photoUrl} alt="Customer preview" />
                     <button type="button" onClick={() => setCardForm((prev) => ({ ...prev, photoUrl: '' }))}>Remove Photo</button>
@@ -805,30 +873,34 @@ function AdminApp({ settings, setSettings }) {
                     {filteredCards.map((card) => (
                       <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
                         <td>
-                          <div className="table-photo-cell">
-                            {card.photoUrl ? (
-                              <img className="table-photo" src={card.photoUrl} alt={card.holderName} />
-                            ) : (
-                              <div className="table-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
-                            )}
-                            <label className="photo-upload-button">
-                              Upload
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={(event) => {
-                                  event.stopPropagation();
-                                  handlePhotoUpload(event, (photoUrl) => updateCard(card, { photoUrl }));
-                                }}
-                              />
-                            </label>
-                            {card.photoUrl && (
-                              <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { photoUrl: '' }); }}>
-                                Remove
-                              </button>
-                            )}
-                          </div>
+                          {settings.enableCustomerPhoto !== false ? (
+                            <div className="table-photo-cell">
+                              {card.photoUrl ? (
+                                <img className="table-photo" src={card.photoUrl} alt={card.holderName} />
+                              ) : (
+                                <div className="table-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+                              )}
+                              <label className="photo-upload-button">
+                                Upload
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) => {
+                                    event.stopPropagation();
+                                    handlePhotoUpload(event, (photoUrl) => updateCard(card, { photoUrl }));
+                                  }}
+                                />
+                              </label>
+                              {card.photoUrl && (
+                                <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { photoUrl: '' }); }}>
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="muted">Off</span>
+                          )}
                         </td>
                         <td>{card.cardNumber}</td>
                         <td>{card.holderName}</td>
