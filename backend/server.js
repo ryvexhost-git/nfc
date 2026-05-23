@@ -21,7 +21,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
   credentials: true,
 }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '6mb' }));
 
 const defaultSettings = {
   businessName: 'NFC-RYV',
@@ -119,6 +119,7 @@ function getPublicCard(card, db) {
     holderName: card.holder_name,
     phone: card.phone,
     position: card.position || '',
+    photoUrl: card.photo_url || '',
     status: card.status,
     balance: Number(card.balance || 0),
     dailyLimit: getDailyLimit(db),
@@ -243,6 +244,8 @@ app.get('/api/cards/:cardId', (req, res) => {
       cardNumber: card.card_number,
       holderName: card.holder_name,
       phone: card.phone,
+      position: card.position || '',
+      photoUrl: card.photo_url || '',
       status: card.status,
       dailyLimit: getDailyLimit(db),
     },
@@ -504,6 +507,7 @@ app.post('/api/admin/cards', requireAdmin, async (req, res) => {
     holder_name: req.body.holderName,
     phone: req.body.phone || '',
     position: String(req.body.position || '').trim(),
+    photo_url: String(req.body.photoUrl || '').trim(),
     password_hash: await bcrypt.hash(req.body.password, 10),
     balance: Number(req.body.balance || 0),
     status: req.body.status || 'active',
@@ -536,6 +540,9 @@ app.put('/api/admin/cards/:cardId', requireAdmin, async (req, res) => {
   card.phone = req.body.phone ?? card.phone;
   if (Object.prototype.hasOwnProperty.call(req.body, 'position')) {
     card.position = String(req.body.position || '').trim();
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, 'photoUrl')) {
+    card.photo_url = String(req.body.photoUrl || '').trim();
   }
   card.status = req.body.status || card.status;
   card.updated_at = new Date().toISOString();

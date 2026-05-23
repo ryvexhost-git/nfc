@@ -19,6 +19,15 @@ function formatMoney(value, settings) {
   return `${settings.currencySymbol || 'Rs.'}${Number(value || 0).toFixed(0)}`;
 }
 
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function getCardIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const queryCard = params.get('card');
@@ -208,6 +217,11 @@ function CustomerApp({ settings, setSettings }) {
                 <p>{card.cardNumber}</p>
                 {card.position && <span className="position-badge">{card.position}</span>}
               </div>
+              {card.photoUrl ? (
+                <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
+              ) : (
+                <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+              )}
               <span className={`status-pill ${card.status}`}>{card.status}</span>
             </section>
 
@@ -333,7 +347,7 @@ function AdminApp({ settings, setSettings }) {
   const [nextCardNumber, setNextCardNumber] = useState('');
   const [activeCardId, setActiveCardId] = useState('');
   const [message, setMessage] = useState('');
-  const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', password: '', balance: 0, status: 'active' });
+  const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
   const [accountPassword, setAccountPassword] = useState('');
@@ -425,7 +439,7 @@ function AdminApp({ settings, setSettings }) {
       });
       setCards((prev) => [...prev, data.card].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber)));
       setNextCardNumber(data.nextCardNumber);
-      setCardForm({ cardNumber: data.nextCardNumber, holderName: '', phone: '', position: '', password: '', balance: 0, status: 'active' });
+      setCardForm({ cardNumber: data.nextCardNumber, holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
       await loadAdminData();
       setMessage('Card created');
     } catch (error) {
@@ -437,12 +451,32 @@ function AdminApp({ settings, setSettings }) {
     try {
       const data = await apiJson(`/admin/cards/${card.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ holderName: card.holderName, phone: card.phone, position: card.position, status: card.status, ...patch }),
+        body: JSON.stringify({ holderName: card.holderName, phone: card.phone, position: card.position, photoUrl: card.photoUrl, status: card.status, ...patch }),
       });
       setCards((prev) => prev.map((item) => (item.id === data.card.id ? data.card : item)));
       setMessage('Card updated');
     } catch (error) {
       setMessage(error.message);
+    }
+  };
+
+  const handlePhotoUpload = async (event, callback) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setMessage('Please choose an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage('Photo must be below 2 MB');
+      event.target.value = '';
+      return;
+    }
+    try {
+      const photoUrl = await readImageAsDataUrl(file);
+      callback(photoUrl);
+    } catch {
+      setMessage('Unable to read selected photo');
     }
   };
 
@@ -702,9 +736,16 @@ function AdminApp({ settings, setSettings }) {
                 <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} placeholder="Customer full name" required /></label>
                 <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} placeholder="Customer mobile number" /></label>
                 <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
+                <label>Customer photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event, (photoUrl) => setCardForm((prev) => ({ ...prev, photoUrl })))} /></label>
                 <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} placeholder="Card login password" required /></label>
                 <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} placeholder="0" /></label>
                 <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
+                {cardForm.photoUrl && (
+                  <div className="photo-preview">
+                    <img src={cardForm.photoUrl} alt="Customer preview" />
+                    <button type="button" onClick={() => setCardForm((prev) => ({ ...prev, photoUrl: '' }))}>Remove Photo</button>
+                  </div>
+                )}
               </div>
             </form>
 
@@ -716,11 +757,37 @@ function AdminApp({ settings, setSettings }) {
               <div className="table-wrap">
                 <table>
                   <thead>
-                    <tr><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+                    <tr><th>Photo</th><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
                   </thead>
                   <tbody>
                     {cards.map((card) => (
                       <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
+                        <td>
+                          <div className="table-photo-cell">
+                            {card.photoUrl ? (
+                              <img className="table-photo" src={card.photoUrl} alt={card.holderName} />
+                            ) : (
+                              <div className="table-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+                            )}
+                            <label className="photo-upload-button">
+                              Upload
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onClick={(event) => event.stopPropagation()}
+                                onChange={(event) => {
+                                  event.stopPropagation();
+                                  handlePhotoUpload(event, (photoUrl) => updateCard(card, { photoUrl }));
+                                }}
+                              />
+                            </label>
+                            {card.photoUrl && (
+                              <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { photoUrl: '' }); }}>
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </td>
                         <td>{card.cardNumber}</td>
                         <td>{card.holderName}</td>
                         <td>{card.phone}</td>
