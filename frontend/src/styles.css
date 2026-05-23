@@ -512,6 +512,12 @@ select {
   margin-right: 0.4rem;
 }
 
+.table-button.warning-button {
+  border-color: rgba(217, 119, 6, 0.28);
+  background: #fff7ed;
+  color: #92400e;
+}
+
 .danger-button {
   border-color: rgba(220, 38, 38, 0.24);
   color: var(--danger);
@@ -520,6 +526,23 @@ select {
 .danger-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.balance-cell-value {
+  display: block;
+  font-weight: 850;
+}
+
+.balance-alert {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #92400e;
+  padding: 0.16rem 0.48rem;
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 .stats-grid {

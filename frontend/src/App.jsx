@@ -597,6 +597,19 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
+  const sendLowBalanceMessage = (card) => {
+    const phoneDigits = String(card.phone || '').replace(/\D/g, '');
+    if (!phoneDigits) {
+      setMessage('No phone number saved for this card');
+      return;
+    }
+    const whatsappPhone = phoneDigits.length === 10 ? `91${phoneDigits}` : phoneDigits;
+    const businessName = settings.businessName || 'NFC Wallet';
+    const messageText = `Hi ${card.holderName}, your ${businessName} NFC card ${card.cardNumber} balance is ${formatMoney(card.balance, settings)}. Please top up to continue using it.`;
+    window.open(`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(messageText)}`, '_blank', 'noopener,noreferrer');
+    setMessage('Low-balance message opened');
+  };
+
   const logout = () => {
     localStorage.removeItem('nfc_ryv_admin_token');
     setToken(null);
@@ -615,7 +628,8 @@ function AdminApp({ settings, setSettings }) {
 
   const recentDebits = transactions.filter((transaction) => transaction.type === 'debit').slice(0, 12);
   const recentTopups = transactions.filter((transaction) => transaction.type === 'topup').slice(0, 12);
-  const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < Number(settings.lowBalanceThreshold || settings.dailyDebitLimit || 50));
+  const messageBalanceLimit = 100;
+  const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit);
   const filteredCards = cards.filter((card) => {
     const search = cardSearch.trim().toLowerCase();
     const matchesSearch = !search
@@ -920,9 +934,17 @@ function AdminApp({ settings, setSettings }) {
                             placeholder="Position"
                           />
                         </td>
-                        <td>{formatMoney(card.balance, settings)}</td>
+                        <td>
+                          <span className="balance-cell-value">{formatMoney(card.balance, settings)}</span>
+                          {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && <span className="balance-alert">Low</span>}
+                        </td>
                         <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
                         <td>
+                          {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && (
+                            <button className="table-button warning-button" type="button" onClick={(event) => { event.stopPropagation(); sendLowBalanceMessage(card); }}>
+                              Message
+                            </button>
+                          )}
                           <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); copyCardLink(card.cardNumber); }}>
                             Copy Link
                           </button>
