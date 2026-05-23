@@ -6,7 +6,7 @@ const DEFAULT_CARD_ID = 'RYV-001';
 const defaultSettings = {
   businessName: 'NFC-RYV',
   logoUrl: '',
-  primaryColor: '#2764ff',
+  primaryColor: '#0f766e',
   supportPhone: '',
   supportEmail: '',
   address: '',
@@ -199,8 +199,7 @@ function CustomerApp({ settings, setSettings }) {
   }
 
   const cardStyle = {
-    background: `linear-gradient(135deg, rgba(22, 32, 42, 0.96), ${settings.primaryColor || '#2764ff'}), linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25% 50%, rgba(255, 255, 255, 0.08) 50% 75%, transparent 75%)`,
-    backgroundSize: 'auto, 30px 30px',
+    background: `linear-gradient(135deg, #102827 0%, ${settings.primaryColor || '#0f766e'} 58%, #d97706 130%)`,
   };
 
   return (
@@ -963,7 +962,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--primary', settings.primaryColor || '#2764ff');
+    document.documentElement.style.setProperty('--primary', settings.primaryColor || '#0f766e');
   }, [settings.primaryColor]);
 
   return isAdmin ? (

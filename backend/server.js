@@ -26,7 +26,7 @@ app.use(express.json({ limit: '6mb' }));
 const defaultSettings = {
   businessName: 'NFC-RYV',
   logoUrl: '',
-  primaryColor: '#2764ff',
+  primaryColor: '#0f766e',
   supportPhone: '9999999999',
   supportEmail: 'support@example.com',
   address: 'Business address',
