@@ -350,6 +350,9 @@ function AdminApp({ settings, setSettings }) {
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
   const [accountPassword, setAccountPassword] = useState('');
+  const [cardSearch, setCardSearch] = useState('');
+  const [cardStatusFilter, setCardStatusFilter] = useState('all');
+  const [transactionSearch, setTransactionSearch] = useState('');
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -556,6 +559,16 @@ function AdminApp({ settings, setSettings }) {
     window.open(`${API_BASE}/admin/transactions/export?token=${encodeURIComponent(token)}`, '_blank');
   };
 
+  const copyCardLink = async (cardNumber) => {
+    const link = `${window.location.origin}/${cardNumber}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setMessage('NFC card link copied');
+    } catch {
+      setMessage(link);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('nfc_ryv_admin_token');
     setToken(null);
@@ -574,6 +587,26 @@ function AdminApp({ settings, setSettings }) {
 
   const recentDebits = transactions.filter((transaction) => transaction.type === 'debit').slice(0, 12);
   const recentTopups = transactions.filter((transaction) => transaction.type === 'topup').slice(0, 12);
+  const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < Number(settings.dailyDebitLimit || 50));
+  const filteredCards = cards.filter((card) => {
+    const search = cardSearch.trim().toLowerCase();
+    const matchesSearch = !search
+      || card.cardNumber.toLowerCase().includes(search)
+      || card.holderName.toLowerCase().includes(search)
+      || String(card.phone || '').includes(search)
+      || String(card.position || '').toLowerCase().includes(search);
+    const matchesStatus = cardStatusFilter === 'all' || card.status === cardStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+  const matchesTransactionSearch = (transaction) => {
+    const search = transactionSearch.trim().toLowerCase();
+    return !search
+      || String(transaction.card_number || '').toLowerCase().includes(search)
+      || String(transaction.note || '').toLowerCase().includes(search)
+      || String(transaction.actor || '').toLowerCase().includes(search);
+  };
+  const filteredDebits = recentDebits.filter(matchesTransactionSearch);
+  const filteredTopups = recentTopups.filter(matchesTransactionSearch);
 
   if (!token) {
     return (
@@ -643,7 +676,7 @@ function AdminApp({ settings, setSettings }) {
               <div><span>Total Cards</span><strong>{cards.length}</strong></div>
               <div><span>Active Cards</span><strong>{cards.filter((card) => card.status === 'active').length}</strong></div>
               <div><span>Total Balance</span><strong>{formatMoney(cards.reduce((sum, card) => sum + Number(card.balance), 0), settings)}</strong></div>
-              <div><span>Transactions</span><strong>{transactions.length}</strong></div>
+              <div><span>Low Balance</span><strong>{lowBalanceCards.length}</strong></div>
             </section>
 
             <div className="admin-grid">
@@ -656,6 +689,7 @@ function AdminApp({ settings, setSettings }) {
                   <div><span>Business</span><strong>{settings.businessName || 'Not set'}</strong></div>
                   <div><span>Card prefix</span><strong>{settings.cardPrefix || 'RYV'}</strong></div>
                   <div><span>Daily debit limit</span><strong>{formatMoney(settings.dailyDebitLimit, settings)}</strong></div>
+                  <div><span>Transactions</span><strong>{transactions.length}</strong></div>
                   <div><span>Support</span><strong>{settings.supportPhone || settings.supportEmail || 'Not set'}</strong></div>
                 </div>
               </section>
@@ -751,7 +785,16 @@ function AdminApp({ settings, setSettings }) {
             <section className="panel">
               <div className="panel-head">
                 <h2>Card List</h2>
-                <span className="muted">Tap a row to select it for top-up.</span>
+                <span className="muted">{filteredCards.length} of {cards.length} cards shown.</span>
+              </div>
+              <div className="filter-bar">
+                <input value={cardSearch} onChange={(event) => setCardSearch(event.target.value)} placeholder="Search card, holder, phone, or position" />
+                <select value={cardStatusFilter} onChange={(event) => setCardStatusFilter(event.target.value)}>
+                  <option value="all">All statuses</option>
+                  <option value="active">Active</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="deleted">Deleted</option>
+                </select>
               </div>
               <div className="table-wrap">
                 <table>
@@ -759,7 +802,7 @@ function AdminApp({ settings, setSettings }) {
                     <tr><th>Photo</th><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
                   </thead>
                   <tbody>
-                    {cards.map((card) => (
+                    {filteredCards.map((card) => (
                       <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
                         <td>
                           <div className="table-photo-cell">
@@ -808,6 +851,9 @@ function AdminApp({ settings, setSettings }) {
                         <td>{formatMoney(card.balance, settings)}</td>
                         <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
                         <td>
+                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); copyCardLink(card.cardNumber); }}>
+                            Copy Link
+                          </button>
                           <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
                             {card.status === 'active' ? 'Block' : 'Activate'}
                           </button>
@@ -819,6 +865,7 @@ function AdminApp({ settings, setSettings }) {
                     ))}
                   </tbody>
                 </table>
+                {filteredCards.length === 0 && <p className="muted empty-state">No cards match this filter.</p>}
               </div>
             </section>
           </>
@@ -845,10 +892,13 @@ function AdminApp({ settings, setSettings }) {
               <div className="panel-head">
                 <h2>Top-up Details</h2>
               </div>
+              <div className="filter-bar compact-filter">
+                <input value={transactionSearch} onChange={(event) => setTransactionSearch(event.target.value)} placeholder="Search card, note, or staff" />
+              </div>
               <div className="transaction-list dashboard-transactions">
-                {recentTopups.length === 0 ? (
+                {filteredTopups.length === 0 ? (
                   <p className="muted">No top-ups yet.</p>
-                ) : recentTopups.map((transaction) => (
+                ) : filteredTopups.map((transaction) => (
                   <article key={transaction.id} className="transaction-row topup-row">
                     <div>
                       <strong>{transaction.card_number}</strong>
@@ -875,10 +925,13 @@ function AdminApp({ settings, setSettings }) {
                 </div>
                 <button type="button" onClick={exportTransactions}>Export CSV</button>
               </div>
+              <div className="filter-bar compact-filter">
+                <input value={transactionSearch} onChange={(event) => setTransactionSearch(event.target.value)} placeholder="Search card, note, or staff" />
+              </div>
               <div className="transaction-list dashboard-transactions">
-                {recentDebits.length === 0 ? (
+                {filteredDebits.length === 0 ? (
                   <p className="muted">No debits yet.</p>
-                ) : recentDebits.map((transaction) => (
+                ) : filteredDebits.map((transaction) => (
                   <article key={transaction.id} className="transaction-row">
                     <div>
                       <strong>{transaction.card_number}</strong>
