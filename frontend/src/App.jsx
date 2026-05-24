@@ -142,10 +142,6 @@ function getCardIdFromUrl() {
   return queryCard || pathCard || DEFAULT_CARD_ID;
 }
 
-function getStoredToken(cardId) {
-  return localStorage.getItem(`nfc_ryv_token_${cardId}`);
-}
-
 function getAdminToken() {
   return localStorage.getItem('nfc_ryv_admin_token');
 }
@@ -172,7 +168,7 @@ function Brand({ settings }) {
 
 function CustomerApp({ settings, setSettings }) {
   const cardId = useMemo(() => getCardIdFromUrl(), []);
-  const [token, setToken] = useState(() => getStoredToken(cardId));
+  const [token, setToken] = useState(null);
   const [card, setCard] = useState(null);
   const [password, setPassword] = useState('');
   const [amount, setAmount] = useState('');
@@ -195,19 +191,7 @@ function CustomerApp({ settings, setSettings }) {
     const loadCard = async () => {
       setLoading(true);
       try {
-        if (token) {
-          const res = await fetch(`${API_BASE}/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          if (res.ok) {
-            syncAccount(data);
-            return;
-          }
-          localStorage.removeItem(`nfc_ryv_token_${cardId}`);
-          setToken(null);
-        }
-
+        localStorage.removeItem(`nfc_ryv_token_${cardId}`);
         const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(cardId)}`);
         const data = await res.json();
         if (res.ok) {
@@ -225,7 +209,7 @@ function CustomerApp({ settings, setSettings }) {
     };
 
     loadCard();
-  }, [cardId, token, setSettings]);
+  }, [cardId, setSettings]);
 
   useEffect(() => {
     const loadStaffSession = async () => {
@@ -279,7 +263,6 @@ function CustomerApp({ settings, setSettings }) {
         return;
       }
 
-      localStorage.setItem(`nfc_ryv_token_${cardId}`, data.token);
       setToken(data.token);
       syncAccount(data);
       setPassword('');
@@ -323,7 +306,6 @@ function CustomerApp({ settings, setSettings }) {
   };
 
   const handleLock = () => {
-    localStorage.removeItem(`nfc_ryv_token_${cardId}`);
     setToken(null);
     setDebits([]);
     setTopups([]);
