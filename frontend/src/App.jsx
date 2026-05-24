@@ -32,6 +32,42 @@ function formatMoney(value, settings) {
   return `${settings.currencySymbol || 'Rs.'}${Number(value || 0).toFixed(0)}`;
 }
 
+function getPeriodStart(date, interval) {
+  const period = new Date(date);
+  period.setHours(0, 0, 0, 0);
+  if (interval === 'week') {
+    const day = period.getDay() || 7;
+    period.setDate(period.getDate() - day + 1);
+  }
+  if (interval === 'month') {
+    period.setDate(1);
+  }
+  return period;
+}
+
+function getPeriodKey(dateText, interval) {
+  const period = getPeriodStart(new Date(dateText), interval);
+  const year = period.getFullYear();
+  const month = String(period.getMonth() + 1).padStart(2, '0');
+  const day = String(period.getDate()).padStart(2, '0');
+  if (interval === 'month') return `${year}-${month}`;
+  if (interval === 'week') return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}`;
+}
+
+function getPeriodLabel(key, interval) {
+  const date = new Date(`${key}${interval === 'month' ? '-01' : ''}T00:00:00`);
+  if (interval === 'month') {
+    return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  }
+  if (interval === 'week') {
+    const weekEnd = new Date(date);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return `${date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}`;
+  }
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+}
+
 function readImageAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -374,6 +410,8 @@ function AdminApp({ settings, setSettings }) {
   const [cardSearch, setCardSearch] = useState('');
   const [cardStatusFilter, setCardStatusFilter] = useState('all');
   const [transactionSearch, setTransactionSearch] = useState('');
+  const [analyticsCardId, setAnalyticsCardId] = useState('all');
+  const [analyticsInterval, setAnalyticsInterval] = useState('day');
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -623,9 +661,17 @@ function AdminApp({ settings, setSettings }) {
     { id: 'cards', label: 'Cards' },
     { id: 'topups', label: 'Top-ups' },
     { id: 'transactions', label: 'Transactions' },
+    { id: 'analytics', label: 'Analytics' },
     ...(currentAdmin?.role === 'admin' ? [{ id: 'users', label: 'Users' }] : []),
   ];
 
+  const cardLookup = useMemo(() => {
+    return cards.reduce((lookup, card) => {
+      lookup[card.id] = card;
+      lookup[card.cardNumber] = card;
+      return lookup;
+    }, {});
+  }, [cards]);
   const recentDebits = transactions.filter((transaction) => transaction.type === 'debit').slice(0, 12);
   const recentTopups = transactions.filter((transaction) => transaction.type === 'topup').slice(0, 12);
   const messageBalanceLimit = 100;
@@ -649,6 +695,25 @@ function AdminApp({ settings, setSettings }) {
   };
   const filteredDebits = recentDebits.filter(matchesTransactionSearch);
   const filteredTopups = recentTopups.filter(matchesTransactionSearch);
+  const analyticsTransactions = transactions.filter((transaction) => {
+    return analyticsCardId === 'all' || transaction.card_id === analyticsCardId || transaction.card_number === analyticsCardId;
+  });
+  const analyticsGroups = analyticsTransactions
+    .reduce((groups, transaction) => {
+      const key = getPeriodKey(transaction.created_at, analyticsInterval);
+      const current = groups[key] || { key, label: getPeriodLabel(key, analyticsInterval), debit: 0, topup: 0, count: 0 };
+      current[transaction.type] = Number(current[transaction.type] || 0) + Number(transaction.amount || 0);
+      current.count += 1;
+      groups[key] = current;
+      return groups;
+    }, {});
+  const analyticsData = Object.values(analyticsGroups).sort((a, b) => a.key.localeCompare(b.key));
+  const analyticsMax = Math.max(1, ...analyticsData.map((item) => Math.max(item.debit, item.topup)));
+  const analyticsTotals = analyticsTransactions.reduce((totals, transaction) => {
+    totals[transaction.type] = Number(totals[transaction.type] || 0) + Number(transaction.amount || 0);
+    return totals;
+  }, { debit: 0, topup: 0 });
+  const analyticsCard = analyticsCardId === 'all' ? null : cardLookup[analyticsCardId];
 
   if (!token) {
     return (
@@ -1037,6 +1102,106 @@ function AdminApp({ settings, setSettings }) {
                     </div>
                   </article>
                 ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeAdminPage === 'analytics' && (
+          <>
+            <section className="panel standard-page">
+              <div className="panel-head">
+                <div>
+                  <h2>Customer Amount Analytics</h2>
+                  <p className="muted">View dated debit and top-up amounts by customer with day, week, or month grouping.</p>
+                </div>
+              </div>
+              <div className="filter-bar analytics-controls">
+                <label>
+                  Customer
+                  <select value={analyticsCardId} onChange={(event) => setAnalyticsCardId(event.target.value)}>
+                    <option value="all">All customers</option>
+                    {cards.map((card) => (
+                      <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Date interval
+                  <select value={analyticsInterval} onChange={(event) => setAnalyticsInterval(event.target.value)}>
+                    <option value="day">Day</option>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                  </select>
+                </label>
+              </div>
+              <div className="analytics-summary">
+                <div><span>Customer</span><strong>{analyticsCard ? analyticsCard.holderName : 'All customers'}</strong></div>
+                <div><span>Total debited</span><strong>{formatMoney(analyticsTotals.debit, settings)}</strong></div>
+                <div><span>Total topped up</span><strong>{formatMoney(analyticsTotals.topup, settings)}</strong></div>
+                <div><span>Entries</span><strong>{analyticsTransactions.length}</strong></div>
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-head">
+                <div>
+                  <h2>Amount by Date</h2>
+                  <p className="muted">Orange shows debits. Green shows top-ups.</p>
+                </div>
+              </div>
+              {analyticsData.length === 0 ? (
+                <p className="muted empty-state">No transactions found for this customer.</p>
+              ) : (
+                <div className="chart-scroll">
+                  <div className="amount-chart" style={{ minWidth: `${Math.max(680, analyticsData.length * 86)}px` }}>
+                    {analyticsData.map((item) => (
+                      <div className="chart-column" key={item.key}>
+                        <div className="chart-bars">
+                          <span
+                            className="chart-bar debit-bar"
+                            style={{ height: item.debit ? `${Math.max(6, (item.debit / analyticsMax) * 170)}px` : 0 }}
+                            title={`Debit ${formatMoney(item.debit, settings)}`}
+                          />
+                          <span
+                            className="chart-bar topup-bar"
+                            style={{ height: item.topup ? `${Math.max(6, (item.topup / analyticsMax) * 170)}px` : 0 }}
+                            title={`Top-up ${formatMoney(item.topup, settings)}`}
+                          />
+                        </div>
+                        <strong>{item.label}</strong>
+                        <span>{formatMoney(item.debit, settings)} debit</span>
+                        <span>{formatMoney(item.topup, settings)} top-up</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Detailed Entries</h2>
+                <span className="muted">{analyticsTransactions.length} transactions</span>
+              </div>
+              <div className="transaction-list dashboard-transactions">
+                {analyticsTransactions.length === 0 ? (
+                  <p className="muted">No dated amounts to show.</p>
+                ) : analyticsTransactions.map((transaction) => {
+                  const transactionCard = cardLookup[transaction.card_id] || cardLookup[transaction.card_number];
+                  return (
+                    <article key={transaction.id} className={`transaction-row ${transaction.type === 'topup' ? 'topup-row' : ''}`}>
+                      <div>
+                        <strong>{transactionCard?.holderName || transaction.card_number}</strong>
+                        <span>{transaction.card_number} - {transaction.note || transaction.actor || transaction.type}</span>
+                      </div>
+                      <div className="amount-stack">
+                        <b>{formatMoney(transaction.amount, settings)}</b>
+                        <time>{new Date(transaction.created_at).toLocaleString('en-IN')}</time>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           </>
