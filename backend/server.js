@@ -57,6 +57,16 @@ const defaultAdmin = {
   created_at: '2026-05-22T00:00:00.000Z',
 };
 
+const defaultManager = {
+  id: 'manager-001',
+  username: 'manager',
+  password_hash: '$2b$10$YtnbVGvibR1PGS.3lhkfEehjQZe8ICBMIxka/44G4oqggJVZu9o/i',
+  name: 'Default Manager',
+  role: 'manager',
+  active: true,
+  created_at: '2026-05-22T00:00:00.000Z',
+};
+
 function ensureDb() {
   const dataDir = path.dirname(DB_FILE);
   if (!fs.existsSync(dataDir)) {
@@ -65,7 +75,7 @@ function ensureDb() {
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify({
       settings: defaultSettings,
-      admins: [defaultAdmin],
+      admins: [defaultAdmin, defaultManager],
       cards: [],
       transactions: [],
     }, null, 2));
@@ -73,9 +83,11 @@ function ensureDb() {
 }
 
 function normalizeDb(data) {
+  const admins = data.admins?.length ? data.admins : [defaultAdmin, defaultManager];
+  const hasDefaultManager = admins.some((admin) => admin.username === defaultManager.username);
   return {
     settings: { ...defaultSettings, ...(data.settings || {}) },
-    admins: (data.admins?.length ? data.admins : [defaultAdmin]).map((admin) => ({
+    admins: (hasDefaultManager ? admins : [...admins, defaultManager]).map((admin) => ({
       active: true,
       ...admin,
     })),

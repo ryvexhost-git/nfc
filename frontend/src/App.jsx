@@ -410,18 +410,18 @@ function CustomerApp({ settings, setSettings }) {
                 <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
               ) : null}
               <span className={`status-pill ${card.status}`}>{card.status}</span>
+              {!token && (
+                <form className="card-pin-box" onSubmit={handleLogin}>
+                  <span>Enter PIN</span>
+                  <div>
+                    <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Card PIN" required />
+                    <button type="submit" disabled={busy}>{busy ? 'Checking...' : 'Unlock'}</button>
+                  </div>
+                </form>
+              )}
             </section>
 
-            {!token ? (
-              <form className="form-panel" onSubmit={handleLogin}>
-                <div className="notice-box">Enter the card password to view balance and debit from this card.</div>
-                <label>
-                  Card password
-                  <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" required />
-                </label>
-                <button type="submit" disabled={busy}>{busy ? 'Verifying...' : 'Open Card'}</button>
-              </form>
-            ) : (
+            {token && (
               <>
                 <section className="balance-grid">
                   <div>
@@ -514,6 +514,7 @@ function CustomerApp({ settings, setSettings }) {
             <div>
               <h3>Admin / Manager Session</h3>
               <p className="muted">Staff login is only for resetting your own password from this NFC app.</p>
+              <p className="muted">Default logins: admin / admin123, manager / manager123.</p>
             </div>
             {staffUser && <button type="button" onClick={handleStaffLogout}>Logout</button>}
           </div>

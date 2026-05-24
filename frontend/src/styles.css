@@ -208,6 +208,59 @@ select {
   text-transform: uppercase;
 }
 
+.card-pin-box {
+  position: absolute;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 2;
+  display: grid;
+  gap: 0.38rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 0.65rem;
+  backdrop-filter: blur(8px);
+}
+
+.card-pin-box span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card-pin-box div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.card-pin-box input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  padding: 0.58rem 0.68rem;
+}
+
+.card-pin-box button {
+  border: 0;
+  border-radius: 0.35rem;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.58rem 0.8rem;
+}
+
+.card-pin-box button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .notice-box,
 .message-box {
   border-radius: 14px;
@@ -1662,7 +1715,8 @@ tr:hover td {
 
 .app-shell.compact-shell .status-pill {
   right: 0.9rem;
-  bottom: 0.9rem;
+  top: 0.9rem;
+  bottom: auto;
   padding: 0.28rem 0.52rem;
 }
 
