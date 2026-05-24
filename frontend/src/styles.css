@@ -1667,7 +1667,7 @@ tr:hover td {
 }
 
 .app-shell.compact-shell > .card-panel {
-  min-height: 178px;
+  min-height: 238px;
 }
 
 .app-shell.compact-shell > .balance-grid {
@@ -1725,21 +1725,22 @@ tr:hover td {
 }
 
 .app-shell.compact-shell .card-panel {
-  padding: 0.9rem;
+  padding: 1rem;
 }
 
 .app-shell.compact-shell .card-panel h2 {
-  font-size: 1.45rem;
+  font-size: 1.62rem;
 }
 
 .app-shell.compact-shell .customer-photo {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
 }
 
 .app-shell.compact-shell .status-pill {
-  padding: 0.28rem 0.52rem;
+  margin-top: 0.15rem;
+  padding: 0.32rem 0.62rem;
 }
 
 .app-shell.compact-shell .form-panel {
