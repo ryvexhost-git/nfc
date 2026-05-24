@@ -470,6 +470,7 @@ function AdminApp({ settings, setSettings }) {
   const [analyticsCardId, setAnalyticsCardId] = useState('all');
   const [analyticsInterval, setAnalyticsInterval] = useState('day');
   const [analyticsRange, setAnalyticsRange] = useState('last30');
+  const [analyticsChartType, setAnalyticsChartType] = useState('bar');
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -777,6 +778,15 @@ function AdminApp({ settings, setSettings }) {
     return totals;
   }, { debit: 0, topup: 0 });
   const analyticsCard = analyticsCardId === 'all' ? null : cardLookup[analyticsCardId];
+  const analyticsChartWidth = Math.max(680, analyticsData.length * 86);
+  const analyticsLineHeight = 230;
+  const analyticsLinePoints = (type) => analyticsData.map((item, index) => {
+    const x = analyticsData.length <= 1 ? analyticsChartWidth / 2 : (index / (analyticsData.length - 1)) * (analyticsChartWidth - 64) + 32;
+    const y = analyticsLineHeight - 30 - (Number(item[type] || 0) / analyticsMax) * 170;
+    return `${x},${y}`;
+  }).join(' ');
+  const analyticsPieTotal = Number(analyticsTotals.debit || 0) + Number(analyticsTotals.topup || 0);
+  const analyticsDebitPercent = analyticsPieTotal ? Math.round((Number(analyticsTotals.debit || 0) / analyticsPieTotal) * 100) : 0;
 
   if (!token) {
     return (
@@ -1209,6 +1219,14 @@ function AdminApp({ settings, setSettings }) {
                     <option value="month">Month</option>
                   </select>
                 </label>
+                <label>
+                  Chart type
+                  <select value={analyticsChartType} onChange={(event) => setAnalyticsChartType(event.target.value)}>
+                    <option value="bar">Bar chart</option>
+                    <option value="line">Line diagram</option>
+                    <option value="pie">Pie diagram</option>
+                  </select>
+                </label>
               </div>
               <div className="analytics-summary">
                 <div><span>Customer</span><strong>{analyticsCard ? analyticsCard.holderName : 'All customers'}</strong></div>
@@ -1225,29 +1243,76 @@ function AdminApp({ settings, setSettings }) {
                   <p className="muted">Orange shows debits. Green shows top-ups.</p>
                 </div>
               </div>
-              <div className="chart-scroll">
-                <div className="amount-chart" style={{ minWidth: `${Math.max(680, analyticsData.length * 86)}px` }}>
-                  {analyticsData.map((item) => (
-                    <div className="chart-column" key={item.key}>
-                      <div className="chart-bars">
-                        <span
-                          className="chart-bar debit-bar"
-                          style={{ height: item.debit ? `${Math.max(6, (item.debit / analyticsMax) * 170)}px` : 0 }}
-                          title={`Debit ${formatMoney(item.debit, settings)}`}
-                        />
-                        <span
-                          className="chart-bar topup-bar"
-                          style={{ height: item.topup ? `${Math.max(6, (item.topup / analyticsMax) * 170)}px` : 0 }}
-                          title={`Top-up ${formatMoney(item.topup, settings)}`}
-                        />
+              {analyticsChartType === 'bar' && (
+                <div className="chart-scroll">
+                  <div className="amount-chart" style={{ minWidth: `${analyticsChartWidth}px` }}>
+                    {analyticsData.map((item) => (
+                      <div className="chart-column" key={item.key}>
+                        <div className="chart-bars">
+                          <span
+                            className="chart-bar debit-bar"
+                            style={{ height: item.debit ? `${Math.max(6, (item.debit / analyticsMax) * 170)}px` : 0 }}
+                            title={`Debit ${formatMoney(item.debit, settings)}`}
+                          />
+                          <span
+                            className="chart-bar topup-bar"
+                            style={{ height: item.topup ? `${Math.max(6, (item.topup / analyticsMax) * 170)}px` : 0 }}
+                            title={`Top-up ${formatMoney(item.topup, settings)}`}
+                          />
+                        </div>
+                        <strong>{item.label}</strong>
+                        <span>{formatMoney(item.debit, settings)} debit</span>
+                        <span>{formatMoney(item.topup, settings)} top-up</span>
                       </div>
-                      <strong>{item.label}</strong>
-                      <span>{formatMoney(item.debit, settings)} debit</span>
-                      <span>{formatMoney(item.topup, settings)} top-up</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              {analyticsChartType === 'line' && (
+                <div className="chart-scroll">
+                  <div className="line-chart" style={{ minWidth: `${analyticsChartWidth}px` }}>
+                    <svg viewBox={`0 0 ${analyticsChartWidth} ${analyticsLineHeight}`} role="img" aria-label="Debit and top-up line diagram">
+                      <line className="chart-axis" x1="32" y1={analyticsLineHeight - 30} x2={analyticsChartWidth - 32} y2={analyticsLineHeight - 30} />
+                      <line className="chart-axis" x1="32" y1="24" x2="32" y2={analyticsLineHeight - 30} />
+                      <polyline className="line-path debit-line" points={analyticsLinePoints('debit')} />
+                      <polyline className="line-path topup-line" points={analyticsLinePoints('topup')} />
+                      {analyticsData.map((item, index) => {
+                        const x = analyticsData.length <= 1 ? analyticsChartWidth / 2 : (index / (analyticsData.length - 1)) * (analyticsChartWidth - 64) + 32;
+                        return (
+                          <g key={item.key}>
+                            <circle className="line-point debit-point" cx={x} cy={analyticsLineHeight - 30 - (Number(item.debit || 0) / analyticsMax) * 170} r="4" />
+                            <circle className="line-point topup-point" cx={x} cy={analyticsLineHeight - 30 - (Number(item.topup || 0) / analyticsMax) * 170} r="4" />
+                            {index % Math.max(1, Math.ceil(analyticsData.length / 8)) === 0 && <text className="line-label" x={x} y={analyticsLineHeight - 8}>{item.label}</text>}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                </div>
+              )}
+              {analyticsChartType === 'pie' && (
+                <div className="pie-chart-wrap">
+                  <div
+                    className="pie-chart"
+                    style={{
+                      background: analyticsPieTotal
+                        ? `conic-gradient(#f97316 0 ${analyticsDebitPercent}%, #0f766e ${analyticsDebitPercent}% 100%)`
+                        : 'conic-gradient(#e5e7eb 0 100%)',
+                    }}
+                    role="img"
+                    aria-label="Debit and top-up pie diagram"
+                  >
+                    <div>
+                      <strong>{analyticsPieTotal ? `${analyticsDebitPercent}%` : '0%'}</strong>
+                      <span>Debit share</span>
+                    </div>
+                  </div>
+                  <div className="pie-legend">
+                    <div><span className="legend-dot debit-dot" />Debit {formatMoney(analyticsTotals.debit, settings)}</div>
+                    <div><span className="legend-dot topup-dot" />Top-up {formatMoney(analyticsTotals.topup, settings)}</div>
+                  </div>
+                </div>
+              )}
               {analyticsTransactions.length === 0 && <p className="muted chart-note">No transactions in this range yet. The timeline is ready and will fill automatically.</p>}
             </section>
 

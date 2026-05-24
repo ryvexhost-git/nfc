@@ -686,7 +686,7 @@ select {
 }
 
 .analytics-controls {
-  grid-template-columns: minmax(260px, 1.3fr) minmax(170px, 0.7fr) minmax(150px, 0.55fr);
+  grid-template-columns: minmax(240px, 1.3fr) minmax(150px, 0.65fr) minmax(140px, 0.55fr) minmax(150px, 0.6fr);
 }
 
 .empty-state {
@@ -962,6 +962,128 @@ tr {
   min-height: 2.1rem;
 }
 
+.line-chart {
+  min-height: 285px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffaf3 0%, #ffffff 100%);
+  padding: 1rem;
+}
+
+.line-chart svg {
+  display: block;
+  width: 100%;
+  height: 245px;
+}
+
+.chart-axis {
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.line-path {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.debit-line {
+  stroke: #f97316;
+}
+
+.topup-line {
+  stroke: #0f766e;
+}
+
+.line-point {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.debit-point {
+  fill: #f97316;
+}
+
+.topup-point {
+  fill: #0f766e;
+}
+
+.line-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.pie-chart-wrap {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  align-items: center;
+  gap: 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffaf3 0%, #ffffff 100%);
+  padding: 1.2rem;
+}
+
+.pie-chart {
+  display: grid;
+  place-items: center;
+  width: min(260px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(23, 33, 31, 0.08);
+}
+
+.pie-chart > div {
+  display: grid;
+  place-items: center;
+  width: 48%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.pie-chart strong {
+  color: var(--ink);
+  font-size: 1.8rem;
+}
+
+.pie-chart span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.pie-legend {
+  display: grid;
+  gap: 0.75rem;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.pie-legend div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.legend-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+}
+
+.debit-dot {
+  background: #f97316;
+}
+
+.topup-dot {
+  background: #0f766e;
+}
+
 .chart-note {
   margin: 0.9rem 0 0;
 }
@@ -1020,6 +1142,7 @@ tr {
   .stats-grid,
   .admin-grid,
   .analytics-summary,
+  .pie-chart-wrap,
   .field-grid,
   .filter-bar,
   .compact-filter {
