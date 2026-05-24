@@ -686,7 +686,7 @@ select {
 }
 
 .analytics-controls {
-  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 0.6fr);
+  grid-template-columns: minmax(260px, 1.3fr) minmax(170px, 0.7fr) minmax(150px, 0.55fr);
 }
 
 .empty-state {
@@ -960,6 +960,10 @@ tr {
   color: var(--ink);
   font-size: 0.82rem;
   min-height: 2.1rem;
+}
+
+.chart-note {
+  margin: 0.9rem 0 0;
 }
 
 .amount-stack {

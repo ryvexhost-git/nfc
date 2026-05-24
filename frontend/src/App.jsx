@@ -68,6 +68,63 @@ function getPeriodLabel(key, interval) {
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 }
 
+function getAnalyticsRangeStart(range) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  if (range === 'today') return start;
+  if (range === 'thisWeek') {
+    const day = start.getDay() || 7;
+    start.setDate(start.getDate() - day + 1);
+    return start;
+  }
+  if (range === 'thisMonth') {
+    start.setDate(1);
+    return start;
+  }
+  if (range === 'last7') {
+    start.setDate(start.getDate() - 6);
+    return start;
+  }
+  if (range === 'last30') {
+    start.setDate(start.getDate() - 29);
+    return start;
+  }
+  if (range === 'last90') {
+    start.setDate(start.getDate() - 89);
+    return start;
+  }
+  return null;
+}
+
+function addPeriod(date, interval) {
+  const next = new Date(date);
+  if (interval === 'month') next.setMonth(next.getMonth() + 1);
+  else if (interval === 'week') next.setDate(next.getDate() + 7);
+  else next.setDate(next.getDate() + 1);
+  return next;
+}
+
+function getPlaceholderPeriods(range, interval) {
+  const end = getPeriodStart(new Date(), interval);
+  let start = getAnalyticsRangeStart(range);
+  if (!start) {
+    start = new Date(end);
+    if (interval === 'month') start.setMonth(start.getMonth() - 5);
+    else if (interval === 'week') start.setDate(start.getDate() - 35);
+    else start.setDate(start.getDate() - 6);
+  }
+  start = getPeriodStart(start, interval);
+
+  const periods = [];
+  let cursor = new Date(start);
+  while (cursor <= end && periods.length < 120) {
+    const key = getPeriodKey(cursor.toISOString(), interval);
+    periods.push({ key, label: getPeriodLabel(key, interval), debit: 0, topup: 0, count: 0 });
+    cursor = addPeriod(cursor, interval);
+  }
+  return periods;
+}
+
 function readImageAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -412,6 +469,7 @@ function AdminApp({ settings, setSettings }) {
   const [transactionSearch, setTransactionSearch] = useState('');
   const [analyticsCardId, setAnalyticsCardId] = useState('all');
   const [analyticsInterval, setAnalyticsInterval] = useState('day');
+  const [analyticsRange, setAnalyticsRange] = useState('last30');
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -695,8 +753,11 @@ function AdminApp({ settings, setSettings }) {
   };
   const filteredDebits = recentDebits.filter(matchesTransactionSearch);
   const filteredTopups = recentTopups.filter(matchesTransactionSearch);
+  const analyticsRangeStart = getAnalyticsRangeStart(analyticsRange);
   const analyticsTransactions = transactions.filter((transaction) => {
-    return analyticsCardId === 'all' || transaction.card_id === analyticsCardId || transaction.card_number === analyticsCardId;
+    const matchesCard = analyticsCardId === 'all' || transaction.card_id === analyticsCardId || transaction.card_number === analyticsCardId;
+    const matchesRange = !analyticsRangeStart || new Date(transaction.created_at) >= analyticsRangeStart;
+    return matchesCard && matchesRange;
   });
   const analyticsGroups = analyticsTransactions
     .reduce((groups, transaction) => {
@@ -707,7 +768,9 @@ function AdminApp({ settings, setSettings }) {
       groups[key] = current;
       return groups;
     }, {});
-  const analyticsData = Object.values(analyticsGroups).sort((a, b) => a.key.localeCompare(b.key));
+  const analyticsData = getPlaceholderPeriods(analyticsRange, analyticsInterval)
+    .map((period) => ({ ...period, ...(analyticsGroups[period.key] || {}) }))
+    .sort((a, b) => a.key.localeCompare(b.key));
   const analyticsMax = Math.max(1, ...analyticsData.map((item) => Math.max(item.debit, item.topup)));
   const analyticsTotals = analyticsTransactions.reduce((totals, transaction) => {
     totals[transaction.type] = Number(totals[transaction.type] || 0) + Number(transaction.amount || 0);
@@ -1113,7 +1176,7 @@ function AdminApp({ settings, setSettings }) {
               <div className="panel-head">
                 <div>
                   <h2>Customer Amount Analytics</h2>
-                  <p className="muted">View dated debit and top-up amounts by customer with day, week, or month grouping.</p>
+                  <p className="muted">Automatically uses debit and top-up data from the other tabs. Select a range and grouping to view the graph.</p>
                 </div>
               </div>
               <div className="filter-bar analytics-controls">
@@ -1127,7 +1190,19 @@ function AdminApp({ settings, setSettings }) {
                   </select>
                 </label>
                 <label>
-                  Date interval
+                  Range
+                  <select value={analyticsRange} onChange={(event) => setAnalyticsRange(event.target.value)}>
+                    <option value="today">Today</option>
+                    <option value="thisWeek">This week</option>
+                    <option value="thisMonth">This month</option>
+                    <option value="last7">Last 7 days</option>
+                    <option value="last30">Last 30 days</option>
+                    <option value="last90">Last 90 days</option>
+                    <option value="all">All time</option>
+                  </select>
+                </label>
+                <label>
+                  Group by
                   <select value={analyticsInterval} onChange={(event) => setAnalyticsInterval(event.target.value)}>
                     <option value="day">Day</option>
                     <option value="week">Week</option>
@@ -1150,33 +1225,30 @@ function AdminApp({ settings, setSettings }) {
                   <p className="muted">Orange shows debits. Green shows top-ups.</p>
                 </div>
               </div>
-              {analyticsData.length === 0 ? (
-                <p className="muted empty-state">No transactions found for this customer.</p>
-              ) : (
-                <div className="chart-scroll">
-                  <div className="amount-chart" style={{ minWidth: `${Math.max(680, analyticsData.length * 86)}px` }}>
-                    {analyticsData.map((item) => (
-                      <div className="chart-column" key={item.key}>
-                        <div className="chart-bars">
-                          <span
-                            className="chart-bar debit-bar"
-                            style={{ height: item.debit ? `${Math.max(6, (item.debit / analyticsMax) * 170)}px` : 0 }}
-                            title={`Debit ${formatMoney(item.debit, settings)}`}
-                          />
-                          <span
-                            className="chart-bar topup-bar"
-                            style={{ height: item.topup ? `${Math.max(6, (item.topup / analyticsMax) * 170)}px` : 0 }}
-                            title={`Top-up ${formatMoney(item.topup, settings)}`}
-                          />
-                        </div>
-                        <strong>{item.label}</strong>
-                        <span>{formatMoney(item.debit, settings)} debit</span>
-                        <span>{formatMoney(item.topup, settings)} top-up</span>
+              <div className="chart-scroll">
+                <div className="amount-chart" style={{ minWidth: `${Math.max(680, analyticsData.length * 86)}px` }}>
+                  {analyticsData.map((item) => (
+                    <div className="chart-column" key={item.key}>
+                      <div className="chart-bars">
+                        <span
+                          className="chart-bar debit-bar"
+                          style={{ height: item.debit ? `${Math.max(6, (item.debit / analyticsMax) * 170)}px` : 0 }}
+                          title={`Debit ${formatMoney(item.debit, settings)}`}
+                        />
+                        <span
+                          className="chart-bar topup-bar"
+                          style={{ height: item.topup ? `${Math.max(6, (item.topup / analyticsMax) * 170)}px` : 0 }}
+                          title={`Top-up ${formatMoney(item.topup, settings)}`}
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <strong>{item.label}</strong>
+                      <span>{formatMoney(item.debit, settings)} debit</span>
+                      <span>{formatMoney(item.topup, settings)} top-up</span>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+              {analyticsTransactions.length === 0 && <p className="muted chart-note">No transactions in this range yet. The timeline is ready and will fill automatically.</p>}
             </section>
 
             <section className="panel">
