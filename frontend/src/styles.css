@@ -602,6 +602,28 @@ select {
   max-width: 1120px;
 }
 
+.employee-window {
+  width: 100%;
+  max-width: none;
+  min-height: 300px;
+}
+
+.employee-window .panel-head {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1rem;
+}
+
+.employee-window .field-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.employee-window input,
+.employee-window select {
+  min-height: 44px;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
@@ -1502,6 +1524,7 @@ tr:hover td {
   .admin-grid,
   .analytics-summary,
   .pie-chart-wrap,
+  .employee-window .field-grid,
   .field-grid,
   .filter-bar,
   .compact-filter {

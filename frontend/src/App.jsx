@@ -1346,13 +1346,13 @@ function AdminApp({ settings, setSettings }) {
 
         {activeAdminPage === 'users' && currentAdmin?.role === 'admin' && (
           <>
-            <form className="panel standard-page" onSubmit={createUser}>
+            <form className="panel employee-window" onSubmit={createUser}>
               <div className="panel-head">
                 <div>
-                  <h2>Create Admin or Manager</h2>
-                  <p className="muted">Create staff logins for operating the NFC wallet system.</p>
+                  <h2>Create Employee Login</h2>
+                  <p className="muted">Create full-size staff login profiles for admins and managers.</p>
                 </div>
-                <button type="submit">Create</button>
+                <button type="submit">Create Employee</button>
               </div>
               <div className="field-grid">
                 <label>Username<input value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} placeholder="manager01" required /></label>
