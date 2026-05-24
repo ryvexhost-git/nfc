@@ -150,6 +150,10 @@ function getAdminToken() {
   return localStorage.getItem('nfc_ryv_admin_token');
 }
 
+function getStaffToken() {
+  return localStorage.getItem('nfc_ryv_staff_token');
+}
+
 function Brand({ settings }) {
   return (
     <div className="brand-lockup">
@@ -181,6 +185,11 @@ function CustomerApp({ settings, setSettings }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [staffToken, setStaffToken] = useState(getStaffToken());
+  const [staffUser, setStaffUser] = useState(null);
+  const [staffLogin, setStaffLogin] = useState({ username: '', password: '' });
+  const [staffPassword, setStaffPassword] = useState('');
+  const [staffBusy, setStaffBusy] = useState(false);
 
   useEffect(() => {
     const loadCard = async () => {
@@ -217,6 +226,32 @@ function CustomerApp({ settings, setSettings }) {
 
     loadCard();
   }, [cardId, token, setSettings]);
+
+  useEffect(() => {
+    const loadStaffSession = async () => {
+      if (!staffToken) {
+        setStaffUser(null);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/admin/me`, {
+          headers: { Authorization: `Bearer ${staffToken}` },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStaffUser(data.admin);
+          return;
+        }
+      } catch {
+        // Session is cleared below.
+      }
+      localStorage.removeItem('nfc_ryv_staff_token');
+      setStaffToken(null);
+      setStaffUser(null);
+    };
+
+    loadStaffSession();
+  }, [staffToken]);
 
   const syncAccount = (data) => {
     setCard(data.card);
@@ -294,6 +329,72 @@ function CustomerApp({ settings, setSettings }) {
     setTopups([]);
     setDebitedToday(0);
     setRemainingDailyLimit(card?.dailyLimit || settings.dailyDebitLimit);
+  };
+
+  const handleStaffLogin = async (event) => {
+    event.preventDefault();
+    setStaffBusy(true);
+    setMessage('');
+    try {
+      const res = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(staffLogin),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || 'Staff login failed');
+        return;
+      }
+      localStorage.setItem('nfc_ryv_staff_token', data.token);
+      setStaffToken(data.token);
+      setStaffUser(data.admin);
+      setStaffLogin({ username: '', password: '' });
+      setMessage('Staff session opened');
+    } catch {
+      setMessage('Unable to open staff session');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const handleStaffPasswordReset = async (event) => {
+    event.preventDefault();
+    if (!staffPassword) {
+      setMessage('Enter a new staff password');
+      return;
+    }
+    setStaffBusy(true);
+    setMessage('');
+    try {
+      const res = await fetch(`${API_BASE}/admin/me/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${staffToken}`,
+        },
+        body: JSON.stringify({ password: staffPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || 'Password reset failed');
+        return;
+      }
+      setStaffPassword('');
+      setMessage('Staff password reset successfully');
+    } catch {
+      setMessage('Unable to reset staff password');
+    } finally {
+      setStaffBusy(false);
+    }
+  };
+
+  const handleStaffLogout = () => {
+    localStorage.removeItem('nfc_ryv_staff_token');
+    setStaffToken(null);
+    setStaffUser(null);
+    setStaffPassword('');
+    setMessage('Staff session closed');
   };
 
   if (loading) {
@@ -426,6 +527,38 @@ function CustomerApp({ settings, setSettings }) {
             </div>
           </section>
         )}
+
+        <section className="staff-session-panel">
+          <div className="history-head">
+            <div>
+              <h3>Admin / Manager Session</h3>
+              <p className="muted">Staff login is only for resetting your own password from this NFC app.</p>
+            </div>
+            {staffUser && <button type="button" onClick={handleStaffLogout}>Logout</button>}
+          </div>
+          {!staffUser ? (
+            <form className="form-panel staff-session-form" onSubmit={handleStaffLogin}>
+              <label>
+                Username
+                <input value={staffLogin.username} onChange={(event) => setStaffLogin({ ...staffLogin, username: event.target.value })} placeholder="admin or manager username" required />
+              </label>
+              <label>
+                Password
+                <input type="password" value={staffLogin.password} onChange={(event) => setStaffLogin({ ...staffLogin, password: event.target.value })} placeholder="Staff password" required />
+              </label>
+              <button type="submit" disabled={staffBusy}>{staffBusy ? 'Opening...' : 'Login'}</button>
+            </form>
+          ) : (
+            <form className="form-panel staff-session-form" onSubmit={handleStaffPasswordReset}>
+              <div className="notice-box">Logged in as {staffUser.name || staffUser.username} ({staffUser.role}). Only password reset is available here.</div>
+              <label>
+                New password
+                <input type="password" value={staffPassword} onChange={(event) => setStaffPassword(event.target.value)} placeholder="Enter new password" required />
+              </label>
+              <button type="submit" disabled={staffBusy}>{staffBusy ? 'Resetting...' : 'Reset Password'}</button>
+            </form>
+          )}
+        </section>
 
         {(settings.supportPhone || settings.supportEmail) && (
           <footer className="support-footer">

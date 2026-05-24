@@ -1580,6 +1580,7 @@ tr:hover td {
 }
 
 .app-shell.compact-shell > .brand-lockup,
+.app-shell.compact-shell > .staff-session-panel,
 .app-shell.compact-shell > .support-footer,
 .app-shell.compact-shell > .customer-note,
 .app-shell.compact-shell > .message-box {
@@ -1605,6 +1606,33 @@ tr:hover td {
   min-height: 220px;
 }
 
+.staff-session-panel {
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem;
+}
+
+.staff-session-panel .history-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.85rem;
+}
+
+.staff-session-panel .history-head p {
+  margin: 0.25rem 0 0;
+}
+
+.staff-session-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.staff-session-form .notice-box {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 480px) {
   .app-screen {
     align-items: stretch;
@@ -1624,10 +1652,15 @@ tr:hover td {
   }
 
   .app-shell.compact-shell > .brand-lockup,
+  .app-shell.compact-shell > .staff-session-panel,
   .app-shell.compact-shell > .support-footer,
   .app-shell.compact-shell > .customer-note,
   .app-shell.compact-shell > .message-box {
     grid-column: auto;
+  }
+
+  .staff-session-form {
+    grid-template-columns: 1fr;
   }
 }
 
