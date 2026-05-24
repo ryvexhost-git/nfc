@@ -28,6 +28,12 @@ const defaultSettings = {
   requireExecutiveName: true,
 };
 
+const mascotAssets = {
+  login: '/Mascot_Cafe_Counter_Combo_REFERENCE.jpeg',
+  card: '/Mascot_Bun_Coffee_Combo_Table_REFERENCE.jpeg',
+  admin: '/Mascot_Pair_Clean_Closeup_REFERENCE.jpeg',
+};
+
 function formatMoney(value, settings) {
   return `${settings.currencySymbol || 'Rs.'}${Number(value || 0).toFixed(0)}`;
 }
@@ -162,6 +168,14 @@ function Brand({ settings }) {
         <span>NFC wallet</span>
         <h1>{settings.businessName}</h1>
       </div>
+    </div>
+  );
+}
+
+function DecorativeMascot({ variant = 'admin', className = '', alt = '' }) {
+  return (
+    <div className={`mascot-frame mascot-${variant} ${className}`} aria-hidden={!alt}>
+      <img src={mascotAssets[variant] || mascotAssets.admin} alt={alt} />
     </div>
   );
 }
@@ -400,18 +414,21 @@ function CustomerApp({ settings, setSettings }) {
         {card ? (
           <>
             <section className="card-panel" style={cardStyle}>
+              <DecorativeMascot variant="card" className="card-panel-mascot" />
               <div className="card-profile-block">
                 <div>
                   <span className="label">Card Holder</span>
                   <h2>{card.holderName}</h2>
                   {card.position && <span className="position-badge">{card.position}</span>}
                 </div>
-                {settings.enableCustomerPhoto !== false && card.photoUrl ? (
-                  <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
-                ) : settings.enableCustomerPhoto !== false ? (
-                  <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
-                ) : null}
-                <span className={`status-pill ${card.status}`}>{card.status}</span>
+                <div className="card-photo-stack">
+                  {settings.enableCustomerPhoto !== false && card.photoUrl ? (
+                    <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
+                  ) : settings.enableCustomerPhoto !== false ? (
+                    <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+                  ) : null}
+                  <span className={`status-pill ${card.status}`}>{card.status}</span>
+                </div>
               </div>
               {!token && (
                 <form className="card-pin-box" onSubmit={handleLogin}>
@@ -921,20 +938,23 @@ function AdminApp({ settings, setSettings }) {
   if (!token) {
     return (
       <main className="admin-screen">
-        <section className="login-card">
-          <Brand settings={settings} />
-          <form className="form-panel" onSubmit={handleAdminLogin}>
-            <label>
-              Admin username
-              <input value={login.username} onChange={(event) => setLogin({ ...login, username: event.target.value })} required />
-            </label>
-            <label>
-              Admin password
-              <input type="password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} placeholder="Default: admin123" required />
-            </label>
-            <button type="submit">Sign In</button>
-          </form>
-          {message && <p className="message-box">{message}</p>}
+        <section className="login-card login-card-with-mascot">
+          <div className="login-content">
+            <Brand settings={settings} />
+            <form className="form-panel" onSubmit={handleAdminLogin}>
+              <label>
+                Admin username
+                <input value={login.username} onChange={(event) => setLogin({ ...login, username: event.target.value })} required />
+              </label>
+              <label>
+                Admin password
+                <input type="password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} placeholder="Default: admin123" required />
+              </label>
+              <button type="submit">Sign In</button>
+            </form>
+            {message && <p className="message-box">{message}</p>}
+          </div>
+          <DecorativeMascot variant="login" className="login-mascot" alt="Mascot at the counter" />
         </section>
       </main>
     );
@@ -945,6 +965,7 @@ function AdminApp({ settings, setSettings }) {
       <section className="admin-shell">
         <aside className="admin-sidebar">
           <Brand settings={settings} />
+          <DecorativeMascot variant="admin" className="sidebar-mascot" />
           <nav className="admin-nav" aria-label="Admin sections">
             {adminNavGroups.map((group) => (
               <div className="admin-nav-group" key={group.label}>
@@ -970,6 +991,7 @@ function AdminApp({ settings, setSettings }) {
             <span className="page-kicker">NFC Admin</span>
             <h2>{adminPages.find((page) => page.id === activeAdminPage)?.label || 'Dashboard'}</h2>
           </div>
+          <DecorativeMascot variant="admin" className="topbar-mascot" />
           <div className="topbar-actions">
             <a className="ghost-button" href="/" target="_blank">Open card app</a>
             <div className="account-menu">
