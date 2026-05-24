@@ -715,14 +715,20 @@ function AdminApp({ settings, setSettings }) {
   };
 
   const adminPages = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'business', label: 'Business' },
-    { id: 'cards', label: 'Cards' },
-    { id: 'topups', label: 'Top-ups' },
-    { id: 'transactions', label: 'Transactions' },
-    { id: 'analytics', label: 'Analytics' },
-    ...(currentAdmin?.role === 'admin' ? [{ id: 'users', label: 'Users' }] : []),
+    { id: 'overview', label: 'Overview', group: 'Dashboard' },
+    { id: 'business', label: 'Business Settings', group: 'Dashboard' },
+    { id: 'cards', label: 'Cards', group: 'Wallet' },
+    { id: 'topups', label: 'Top-ups', group: 'Wallet' },
+    { id: 'transactions', label: 'Transactions', group: 'Reports' },
+    { id: 'analytics', label: 'Analytics', group: 'Reports' },
+    ...(currentAdmin?.role === 'admin' ? [{ id: 'users', label: 'Employees', group: 'Team' }] : []),
   ];
+  const adminNavGroups = adminPages.reduce((groups, page) => {
+    const group = groups.find((item) => item.label === page.group);
+    if (group) group.pages.push(page);
+    else groups.push({ label: page.group, pages: [page] });
+    return groups;
+  }, []);
 
   const cardLookup = useMemo(() => {
     return cards.reduce((lookup, card) => {
@@ -813,8 +819,33 @@ function AdminApp({ settings, setSettings }) {
   return (
     <main className="admin-screen">
       <section className="admin-shell">
-        <header className="admin-topbar">
+        <aside className="admin-sidebar">
           <Brand settings={settings} />
+          <nav className="admin-nav" aria-label="Admin sections">
+            {adminNavGroups.map((group) => (
+              <div className="admin-nav-group" key={group.label}>
+                <span>{group.label}</span>
+                {group.pages.map((page) => (
+                  <button
+                    key={page.id}
+                    className={activeAdminPage === page.id ? 'active' : ''}
+                    type="button"
+                    onClick={() => setActiveAdminPage(page.id)}
+                  >
+                    {page.label}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        <section className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <span className="page-kicker">NFC Admin</span>
+            <h2>{adminPages.find((page) => page.id === activeAdminPage)?.label || 'Dashboard'}</h2>
+          </div>
           <div className="topbar-actions">
             <a className="ghost-button" href="/" target="_blank">Open card app</a>
             <div className="account-menu">
@@ -836,19 +867,6 @@ function AdminApp({ settings, setSettings }) {
             </div>
           </div>
         </header>
-
-        <nav className="admin-nav" aria-label="Admin sections">
-          {adminPages.map((page) => (
-            <button
-              key={page.id}
-              className={activeAdminPage === page.id ? 'active' : ''}
-              type="button"
-              onClick={() => setActiveAdminPage(page.id)}
-            >
-              {page.label}
-            </button>
-          ))}
-        </nav>
 
         {activeAdminPage === 'overview' && (
           <>
@@ -1392,6 +1410,7 @@ function AdminApp({ settings, setSettings }) {
         )}
 
         {message && <p className="message-box floating-message">{message}</p>}
+        </section>
       </section>
     </main>
   );
