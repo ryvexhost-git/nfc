@@ -91,6 +91,15 @@ select {
   border: 1px solid var(--line);
 }
 
+.brand-logo.rh-brand-logo {
+  width: 76px;
+  height: 54px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  object-fit: contain;
+}
+
 .brand-mark {
   width: 52px;
   height: 52px;
@@ -228,14 +237,21 @@ select {
   text-transform: uppercase;
 }
 
-.card-pin-box {
+.card-pin-area {
   position: absolute;
-  left: auto;
-  right: 0.9rem;
-  bottom: 0.9rem;
+  left: 0.9rem;
+  right: auto;
+  bottom: 0.75rem;
   z-index: 2;
+  display: flex;
+  align-items: end;
+  gap: 0;
+}
+
+.card-pin-box {
   display: grid;
   width: min(52%, 250px);
+  min-width: 230px;
   gap: 0.16rem;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 0.5rem;
@@ -294,18 +310,24 @@ select {
   width: 100%;
 }
 
-.card-panel-mascot {
-  position: absolute;
-  right: 0.6rem;
-  bottom: 0.6rem;
-  z-index: 1;
-  width: 112px;
-  height: 94px;
+.card-pin-mascot {
+  width: 148px;
+  height: 116px;
+  margin-left: 0.55rem;
+  margin-bottom: -0.3rem;
   border: 0;
-  border-radius: 0.625rem;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-  opacity: 0.24;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.22));
+  clip-path: inset(0 round 1.15rem);
   pointer-events: none;
+}
+
+.card-pin-mascot img {
+  transform: scale(1.18);
+  object-position: center 74%;
 }
 
 .card-profile-block .status-pill {
@@ -369,6 +391,36 @@ select {
 
 .balance-grid div:first-child strong {
   font-size: 2.25rem;
+}
+
+.balance-grid .session-tile {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.balance-grid .session-tile span,
+.balance-grid .session-tile strong {
+  grid-column: 1;
+}
+
+.balance-grid .session-tile strong {
+  font-size: 1rem;
+}
+
+.session-tile button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.58rem 0.8rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .form-panel {
@@ -1343,6 +1395,10 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.brand-logo.rh-brand-logo {
+  box-shadow: none;
+}
+
 .card-panel {
   border-radius: 0.625rem;
   background:
@@ -1802,6 +1858,11 @@ tr:hover td {
   height: 44px;
 }
 
+.app-shell.compact-shell .brand-logo.rh-brand-logo {
+  width: 72px;
+  height: 46px;
+}
+
 .app-shell.compact-shell .brand-lockup h1 {
   font-size: 1.1rem;
 }
@@ -1895,15 +1956,20 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 
-  .card-pin-box {
+  .card-pin-area {
     left: 0.7rem;
     right: 0.7rem;
-    width: auto;
   }
 
-  .card-panel-mascot {
-    width: 92px;
-    height: 78px;
+  .card-pin-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .card-pin-mascot {
+    width: 104px;
+    height: 86px;
+    margin-left: 0.35rem;
   }
 }
 

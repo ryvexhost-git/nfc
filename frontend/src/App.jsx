@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const DEFAULT_CARD_ID = 'RYV-001';
+const DEFAULT_BRAND_LOGO = '/rh-logo-gradient.png';
 
 const defaultSettings = {
   businessName: 'NFC-RYV',
@@ -157,10 +158,12 @@ function getStaffToken() {
 }
 
 function Brand({ settings }) {
+  const brandLogo = settings.logoUrl || DEFAULT_BRAND_LOGO;
+
   return (
     <div className="brand-lockup">
-      {settings.logoUrl ? (
-        <img className="brand-logo" src={settings.logoUrl} alt={settings.businessName} />
+      {brandLogo ? (
+        <img className={`brand-logo ${settings.logoUrl ? '' : 'rh-brand-logo'}`} src={brandLogo} alt={settings.businessName} />
       ) : (
         <div className="brand-mark">{settings.businessName?.slice(0, 1) || 'N'}</div>
       )}
@@ -328,6 +331,17 @@ function CustomerApp({ settings, setSettings }) {
     setRemainingDailyLimit(card?.dailyLimit || settings.dailyDebitLimit);
   };
 
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      handleLock();
+      setMessage('Card session closed automatically after 5 minutes');
+    }, 5 * 60 * 1000);
+
+    return () => window.clearTimeout(timeout);
+  }, [token, card, settings.dailyDebitLimit]);
+
   const handleStaffLogin = async (event) => {
     event.preventDefault();
     setStaffBusy(true);
@@ -414,7 +428,6 @@ function CustomerApp({ settings, setSettings }) {
         {card ? (
           <>
             <section className="card-panel" style={cardStyle}>
-              <DecorativeMascot variant="card" className="card-panel-mascot" />
               <div className="card-profile-block">
                 <div>
                   <span className="label">Card Holder</span>
@@ -431,13 +444,16 @@ function CustomerApp({ settings, setSettings }) {
                 </div>
               </div>
               {!token && (
-                <form className="card-pin-box" onSubmit={handleLogin}>
-                  <span>Enter PIN</span>
-                  <div>
-                    <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Card PIN" required />
-                    <button type="submit" disabled={busy}>{busy ? 'Checking...' : 'Unlock'}</button>
-                  </div>
-                </form>
+                <div className="card-pin-area">
+                  <form className="card-pin-box" onSubmit={handleLogin}>
+                    <span>Enter PIN</span>
+                    <div>
+                      <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Card PIN" required />
+                      <button type="submit" disabled={busy}>{busy ? 'Checking...' : 'Unlock'}</button>
+                    </div>
+                  </form>
+                  <DecorativeMascot variant="card" className="card-pin-mascot" />
+                </div>
               )}
             </section>
 
@@ -455,6 +471,11 @@ function CustomerApp({ settings, setSettings }) {
                   <div>
                     <span>Used Today</span>
                     <strong>{formatMoney(debitedToday, settings)}</strong>
+                  </div>
+                  <div className="session-tile">
+                    <span>Card Session</span>
+                    <strong>Auto logout in 5 min</strong>
+                    <button type="button" onClick={() => { handleLock(); setMessage('Card session closed'); }}>Logout</button>
                   </div>
                 </section>
 
@@ -477,7 +498,6 @@ function CustomerApp({ settings, setSettings }) {
                 <section className="history-panel">
                   <div className="history-head">
                     <h3>Recent Debits</h3>
-                    <button type="button" onClick={handleLock}>Lock</button>
                   </div>
                   {debits.length === 0 ? (
                     <p>No debits yet.</p>
