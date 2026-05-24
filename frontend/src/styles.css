@@ -181,6 +181,8 @@ select {
 }
 
 .status-pill {
+  display: inline-flex;
+  align-self: flex-start;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -189,9 +191,6 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #ffffff;
-  position: absolute;
-  right: 1.2rem;
-  bottom: 1.2rem;
 }
 
 .position-badge {
@@ -215,17 +214,17 @@ select {
   bottom: 0.9rem;
   z-index: 2;
   display: grid;
-  gap: 0.38rem;
+  gap: 0.24rem;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 0.625rem;
   background: rgba(255, 255, 255, 0.14);
-  padding: 0.65rem;
+  padding: 0.46rem;
   backdrop-filter: blur(8px);
 }
 
 .card-pin-box span {
   color: rgba(255, 255, 255, 0.76);
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -234,7 +233,7 @@ select {
 .card-pin-box div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .card-pin-box input {
@@ -243,7 +242,7 @@ select {
   border-radius: 0.35rem;
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
-  padding: 0.58rem 0.68rem;
+  padding: 0.42rem 0.52rem;
 }
 
 .card-pin-box button {
@@ -253,12 +252,37 @@ select {
   color: var(--ink);
   cursor: pointer;
   font-weight: 700;
-  padding: 0.58rem 0.8rem;
+  padding: 0.42rem 0.62rem;
 }
 
 .card-pin-box button:disabled {
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.card-profile-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.card-profile-block .status-pill {
+  grid-column: 1 / -1;
+}
+
+.staff-login-link {
+  grid-column: 1 / -1;
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--shards-primary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0;
+  text-decoration: underline;
 }
 
 .notice-box,
@@ -1635,6 +1659,7 @@ tr:hover td {
 
 .app-shell.compact-shell > .brand-lockup,
 .app-shell.compact-shell > .staff-session-panel,
+.app-shell.compact-shell > .staff-login-link,
 .app-shell.compact-shell > .support-footer,
 .app-shell.compact-shell > .customer-note,
 .app-shell.compact-shell > .message-box {
@@ -1714,9 +1739,6 @@ tr:hover td {
 }
 
 .app-shell.compact-shell .status-pill {
-  right: 0.9rem;
-  top: 0.9rem;
-  bottom: auto;
   padding: 0.28rem 0.52rem;
 }
 
@@ -1763,6 +1785,7 @@ tr:hover td {
 
   .app-shell.compact-shell > .brand-lockup,
   .app-shell.compact-shell > .staff-session-panel,
+  .app-shell.compact-shell > .staff-login-link,
   .app-shell.compact-shell > .support-footer,
   .app-shell.compact-shell > .customer-note,
   .app-shell.compact-shell > .message-box {

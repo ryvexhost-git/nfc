@@ -186,6 +186,7 @@ function CustomerApp({ settings, setSettings }) {
   const [staffLogin, setStaffLogin] = useState({ username: '', password: '' });
   const [staffPassword, setStaffPassword] = useState('');
   const [staffBusy, setStaffBusy] = useState(false);
+  const [showStaffLogin, setShowStaffLogin] = useState(false);
 
   useEffect(() => {
     const loadCard = async () => {
@@ -399,17 +400,19 @@ function CustomerApp({ settings, setSettings }) {
         {card ? (
           <>
             <section className="card-panel" style={cardStyle}>
-              <div>
-                <span className="label">Card Holder</span>
-                <h2>{card.holderName}</h2>
-                {card.position && <span className="position-badge">{card.position}</span>}
+              <div className="card-profile-block">
+                <div>
+                  <span className="label">Card Holder</span>
+                  <h2>{card.holderName}</h2>
+                  {card.position && <span className="position-badge">{card.position}</span>}
+                </div>
+                {settings.enableCustomerPhoto !== false && card.photoUrl ? (
+                  <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
+                ) : settings.enableCustomerPhoto !== false ? (
+                  <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+                ) : null}
+                <span className={`status-pill ${card.status}`}>{card.status}</span>
               </div>
-              {settings.enableCustomerPhoto !== false && card.photoUrl ? (
-                <img className="customer-photo" src={card.photoUrl} alt={card.holderName} />
-              ) : settings.enableCustomerPhoto !== false ? (
-                <div className="customer-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
-              ) : null}
-              <span className={`status-pill ${card.status}`}>{card.status}</span>
               {!token && (
                 <form className="card-pin-box" onSubmit={handleLogin}>
                   <span>Enter PIN</span>
@@ -509,6 +512,11 @@ function CustomerApp({ settings, setSettings }) {
           </section>
         )}
 
+        <button className="staff-login-link" type="button" onClick={() => setShowStaffLogin((value) => !value)}>
+          {showStaffLogin ? 'Hide staff login' : 'Staff login'}
+        </button>
+
+        {showStaffLogin && (
         <section className="staff-session-panel">
           <div className="history-head">
             <div>
@@ -541,6 +549,7 @@ function CustomerApp({ settings, setSettings }) {
             </form>
           )}
         </section>
+        )}
 
         {(settings.supportPhone || settings.supportEmail) && (
           <footer className="support-footer">
