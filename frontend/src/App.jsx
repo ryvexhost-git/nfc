@@ -420,7 +420,6 @@ function CustomerApp({ settings, setSettings }) {
               <div>
                 <span className="label">Card Holder</span>
                 <h2>{card.holderName}</h2>
-                <p>{card.cardNumber}</p>
                 {card.position && <span className="position-badge">{card.position}</span>}
               </div>
               {settings.enableCustomerPhoto !== false && card.photoUrl ? (
@@ -523,7 +522,7 @@ function CustomerApp({ settings, setSettings }) {
             <div>
               <span className="label">NFC Card</span>
               <h2>Card not found</h2>
-              <p>Use a URL like /{settings.cardPrefix}-001 or /?card={settings.cardPrefix}-001.</p>
+              <p>Please contact the counter team to verify this card.</p>
             </div>
           </section>
         )}
