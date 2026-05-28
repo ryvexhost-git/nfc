@@ -186,6 +186,37 @@ select {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.card-business-lockup {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: calc(100% - 2rem);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 0.34rem 0.68rem 0.34rem 0.4rem;
+  backdrop-filter: blur(8px);
+}
+
+.card-business-lockup img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.card-business-lockup span {
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .customer-photo {
   width: 72px;
   height: 72px;

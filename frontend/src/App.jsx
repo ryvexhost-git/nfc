@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const DEFAULT_CARD_ID = 'RYV-001';
-const DEFAULT_BRAND_LOGO = '/rh-logo-gradient.png';
+const DEFAULT_BRAND_LOGO = '/favicon-bun.png';
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
 
 const defaultSettings = {
-  businessName: 'NFC-RYV',
+  businessName: 'THE COFFEEBUN',
   legalName: '',
   logoUrl: '',
   primaryColor: '#0f766e',
@@ -443,6 +443,12 @@ function CustomerApp({ settings, setSettings }) {
         {card ? (
           <>
             <section className="card-panel" style={cardStyle}>
+              {token && (
+                <div className="card-business-lockup">
+                  <img src={settings.logoUrl || DEFAULT_BRAND_LOGO} alt={settings.businessName} />
+                  <span>{settings.businessName || 'THE COFFEEBUN'}</span>
+                </div>
+              )}
               <div className="card-profile-block">
                 <div>
                   <span className="label">Card Holder</span>
@@ -718,7 +724,7 @@ function AdminApp({ settings, setSettings }) {
     if (savingSettings) return;
     const payload = {
       ...settings,
-      businessName: String(settings.businessName || '').trim() || 'NFC-RYV',
+      businessName: String(settings.businessName || '').trim() || 'THE COFFEEBUN',
       legalName: String(settings.legalName || '').trim(),
       logoUrl: String(settings.logoUrl || '').trim(),
       primaryColor: /^#[0-9A-F]{6}$/i.test(String(settings.primaryColor || '')) ? settings.primaryColor : '#0f766e',

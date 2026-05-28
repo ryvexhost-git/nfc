@@ -25,7 +25,7 @@ app.use(cors({
 app.use(express.json({ limit: '6mb' }));
 
 const defaultSettings = {
-  businessName: 'NFC-RYV',
+  businessName: 'THE COFFEEBUN',
   legalName: '',
   logoUrl: '',
   primaryColor: '#0f766e',
