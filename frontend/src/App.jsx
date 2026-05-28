@@ -636,6 +636,7 @@ function AdminApp({ settings, setSettings }) {
   const [nextCardNumber, setNextCardNumber] = useState('');
   const [activeCardId, setActiveCardId] = useState('');
   const [message, setMessage] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
   const [creatingCard, setCreatingCard] = useState(false);
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
@@ -713,10 +714,37 @@ function AdminApp({ settings, setSettings }) {
 
   const saveSettings = async (event) => {
     event.preventDefault();
+    if (savingSettings) return;
+    const payload = {
+      ...settings,
+      businessName: String(settings.businessName || '').trim() || 'NFC-RYV',
+      legalName: String(settings.legalName || '').trim(),
+      logoUrl: String(settings.logoUrl || '').trim(),
+      primaryColor: /^#[0-9A-F]{6}$/i.test(String(settings.primaryColor || '')) ? settings.primaryColor : '#0f766e',
+      supportPhone: String(settings.supportPhone || '').trim(),
+      supportEmail: String(settings.supportEmail || '').trim(),
+      websiteUrl: String(settings.websiteUrl || '').trim(),
+      address: String(settings.address || '').trim(),
+      gstNumber: String(settings.gstNumber || '').trim(),
+      currencySymbol: String(settings.currencySymbol || '').trim() || 'Rs.',
+      dailyDebitLimit: Number(settings.dailyDebitLimit || 0),
+      lowBalanceThreshold: Number(settings.lowBalanceThreshold || 0),
+      maxCardBalance: Number(settings.maxCardBalance || 0),
+      openingBalanceDefault: Number(settings.openingBalanceDefault || 0),
+      cardPrefix: String(settings.cardPrefix || 'RYV').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'RYV',
+      nfcBaseUrl: String(settings.nfcBaseUrl || '').trim(),
+      invoicePrefix: String(settings.invoicePrefix || 'NFC').trim().toUpperCase() || 'NFC',
+      timezone: String(settings.timezone || 'Asia/Kolkata').trim() || 'Asia/Kolkata',
+      receiptFooter: String(settings.receiptFooter || '').trim(),
+      termsText: String(settings.termsText || '').trim(),
+      enableCustomerPhoto: settings.enableCustomerPhoto !== false,
+      requireExecutiveName: settings.requireExecutiveName !== false,
+    };
     try {
+      setSavingSettings(true);
       const data = await apiJson('/admin/settings', {
         method: 'PUT',
-        body: JSON.stringify(settings),
+        body: JSON.stringify(payload),
       });
       setSettings(data.settings);
       if (data.nextCardNumber) {
@@ -726,6 +754,8 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Business settings saved');
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -1186,7 +1216,7 @@ function AdminApp({ settings, setSettings }) {
                 <h2>Business Settings</h2>
                 <p className="muted">Manage brand identity, wallet rules, NFC defaults, and report details.</p>
               </div>
-              <button type="submit">Save</button>
+              <button type="submit" disabled={savingSettings}>{savingSettings ? 'Saving...' : 'Save'}</button>
             </div>
 
             <section className="settings-section">

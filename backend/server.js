@@ -120,6 +120,11 @@ function normalizeCardPrefix(value) {
   return prefix || defaultSettings.cardPrefix;
 }
 
+function numberSetting(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function getCardById(db, cardId) {
   return db.cards.find((card) => card.id === cardId || card.card_number === cardId);
 }
@@ -495,30 +500,31 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
 
 app.put('/api/admin/settings', requireAdmin, (req, res) => {
   const db = readDb();
+  const body = req.body || {};
   const nextSettings = {
     ...db.settings,
-    businessName: req.body.businessName || db.settings.businessName,
-    legalName: req.body.legalName || '',
-    logoUrl: req.body.logoUrl || '',
-    primaryColor: req.body.primaryColor || db.settings.primaryColor,
-    supportPhone: req.body.supportPhone || '',
-    supportEmail: req.body.supportEmail || '',
-    websiteUrl: req.body.websiteUrl || '',
-    address: req.body.address || '',
-    gstNumber: req.body.gstNumber || '',
-    currencySymbol: req.body.currencySymbol || db.settings.currencySymbol,
-    dailyDebitLimit: Number(req.body.dailyDebitLimit || db.settings.dailyDebitLimit),
-    lowBalanceThreshold: Number(req.body.lowBalanceThreshold || db.settings.lowBalanceThreshold || 50),
-    maxCardBalance: Number(req.body.maxCardBalance || db.settings.maxCardBalance || 5000),
-    openingBalanceDefault: Number(req.body.openingBalanceDefault || 0),
-    cardPrefix: normalizeCardPrefix(req.body.cardPrefix || db.settings.cardPrefix),
-    nfcBaseUrl: req.body.nfcBaseUrl || '',
-    invoicePrefix: req.body.invoicePrefix || db.settings.invoicePrefix || 'NFC',
-    timezone: req.body.timezone || db.settings.timezone || 'Asia/Kolkata',
-    receiptFooter: req.body.receiptFooter || '',
-    termsText: req.body.termsText || '',
-    enableCustomerPhoto: req.body.enableCustomerPhoto !== false,
-    requireExecutiveName: req.body.requireExecutiveName !== false,
+    businessName: String(body.businessName || db.settings.businessName || defaultSettings.businessName).trim(),
+    legalName: String(body.legalName || '').trim(),
+    logoUrl: String(body.logoUrl || '').trim(),
+    primaryColor: /^#[0-9A-F]{6}$/i.test(String(body.primaryColor || '')) ? body.primaryColor : db.settings.primaryColor,
+    supportPhone: String(body.supportPhone || '').trim(),
+    supportEmail: String(body.supportEmail || '').trim(),
+    websiteUrl: String(body.websiteUrl || '').trim(),
+    address: String(body.address || '').trim(),
+    gstNumber: String(body.gstNumber || '').trim(),
+    currencySymbol: String(body.currencySymbol || db.settings.currencySymbol || defaultSettings.currencySymbol).trim(),
+    dailyDebitLimit: numberSetting(body.dailyDebitLimit, db.settings.dailyDebitLimit || DEFAULT_DAILY_LIMIT),
+    lowBalanceThreshold: numberSetting(body.lowBalanceThreshold, db.settings.lowBalanceThreshold || 50),
+    maxCardBalance: numberSetting(body.maxCardBalance, db.settings.maxCardBalance || 5000),
+    openingBalanceDefault: numberSetting(body.openingBalanceDefault, 0),
+    cardPrefix: normalizeCardPrefix(body.cardPrefix || db.settings.cardPrefix),
+    nfcBaseUrl: String(body.nfcBaseUrl || '').trim(),
+    invoicePrefix: String(body.invoicePrefix || db.settings.invoicePrefix || 'NFC').trim().toUpperCase(),
+    timezone: String(body.timezone || db.settings.timezone || 'Asia/Kolkata').trim(),
+    receiptFooter: String(body.receiptFooter || '').trim(),
+    termsText: String(body.termsText || '').trim(),
+    enableCustomerPhoto: body.enableCustomerPhoto !== false,
+    requireExecutiveName: body.requireExecutiveName !== false,
   };
 
   db.settings = nextSettings;
