@@ -638,6 +638,7 @@ function AdminApp({ settings, setSettings }) {
   const [message, setMessage] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [creatingCard, setCreatingCard] = useState(false);
+  const [photoInputKey, setPhotoInputKey] = useState(0);
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [pinResetForm, setPinResetForm] = useState({ cardId: '', password: '' });
@@ -784,6 +785,7 @@ function AdminApp({ settings, setSettings }) {
       setCards((prev) => [...prev, data.card].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber)));
       setNextCardNumber(data.nextCardNumber);
       setCardForm({ cardNumber: data.nextCardNumber, holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
+      setPhotoInputKey((key) => key + 1);
       await loadAdminData();
       setMessage('Card created');
     } catch (error) {
@@ -856,8 +858,10 @@ function AdminApp({ settings, setSettings }) {
     try {
       const photoUrl = await readImageAsDataUrl(file);
       callback(photoUrl);
+      event.target.value = '';
     } catch {
       setMessage('Unable to read selected photo');
+      event.target.value = '';
     }
   };
 
@@ -934,6 +938,9 @@ function AdminApp({ settings, setSettings }) {
     try {
       await apiJson(`/admin/cards/${cardId}`, { method: 'DELETE' });
       setCards((prev) => prev.filter((card) => card.id !== cardId));
+      setActiveCardId((value) => (value === cardId ? '' : value));
+      setTopUpForm((prev) => (prev.cardId === cardId ? { cardId: '', amount: '', note: '' } : prev));
+      setPinResetForm((prev) => (prev.cardId === cardId ? { cardId: '', password: '' } : prev));
       setMessage('Card user deleted');
     } catch (error) {
       setMessage(error.message);
@@ -1017,6 +1024,7 @@ function AdminApp({ settings, setSettings }) {
   const messageBalanceLimit = 100;
   const lowBalanceCards = cards.filter((card) => card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit);
   const filteredCards = cards.filter((card) => {
+    if (card.status === 'deleted') return false;
     const search = cardSearch.trim().toLowerCase();
     const matchesSearch = !search
       || card.cardNumber.toLowerCase().includes(search)
@@ -1287,14 +1295,14 @@ function AdminApp({ settings, setSettings }) {
                 <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} placeholder="Customer full name" required /></label>
                 <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} placeholder="Customer mobile number" /></label>
                 <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>
-                {settings.enableCustomerPhoto !== false && <label>Customer photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event, (photoUrl) => setCardForm((prev) => ({ ...prev, photoUrl })))} /></label>}
+                {settings.enableCustomerPhoto !== false && <label>Customer photo<input key={photoInputKey} type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event, (photoUrl) => setCardForm((prev) => ({ ...prev, photoUrl })))} /></label>}
                 <label>Password<input value={cardForm.password} onChange={(event) => setCardForm({ ...cardForm, password: event.target.value })} placeholder="Card login password" required /></label>
                 <label>Opening balance<input type="number" value={cardForm.balance} onChange={(event) => setCardForm({ ...cardForm, balance: Number(event.target.value) })} placeholder="0" /></label>
                 <label>Status<select value={cardForm.status} onChange={(event) => setCardForm({ ...cardForm, status: event.target.value })}><option>active</option><option>blocked</option></select></label>
                 {settings.enableCustomerPhoto !== false && cardForm.photoUrl && (
                   <div className="photo-preview">
                     <img src={cardForm.photoUrl} alt="Customer preview" />
-                    <button type="button" onClick={() => setCardForm((prev) => ({ ...prev, photoUrl: '' }))}>Remove Photo</button>
+                    <button type="button" onClick={() => { setCardForm((prev) => ({ ...prev, photoUrl: '' })); setPhotoInputKey((key) => key + 1); }}>Remove Photo</button>
                   </div>
                 )}
               </div>
@@ -1333,7 +1341,6 @@ function AdminApp({ settings, setSettings }) {
                   <option value="all">All statuses</option>
                   <option value="active">Active</option>
                   <option value="blocked">Blocked</option>
-                  <option value="deleted">Deleted</option>
                 </select>
               </div>
               <div className="table-wrap">
@@ -1397,7 +1404,7 @@ function AdminApp({ settings, setSettings }) {
                           {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && <span className="balance-alert">Low</span>}
                         </td>
                         <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
-                        <td>
+                        <td className="actions-cell">
                           {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && (
                             <button className="table-button warning-button" type="button" onClick={(event) => { event.stopPropagation(); sendLowBalanceMessage(card); }}>
                               Message

@@ -728,9 +728,10 @@ select {
 }
 
 .table-button {
-  padding: 0.45rem 0.7rem;
-  font-size: 0.78rem;
-  margin-right: 0.4rem;
+  padding: 0.34rem 0.5rem;
+  font-size: 0.72rem;
+  margin: 0.12rem;
+  white-space: nowrap;
 }
 
 .table-button.warning-button {
@@ -1053,10 +1054,10 @@ select {
   cursor: pointer;
   display: inline-flex;
   flex-direction: row;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 900;
   gap: 0;
-  padding: 0.42rem 0.55rem;
+  padding: 0.34rem 0.48rem;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -1076,7 +1077,20 @@ select {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 880px;
+  min-width: 980px;
+}
+
+.actions-cell {
+  min-width: 210px;
+  max-width: 230px;
+}
+
+.actions-cell .table-button {
+  min-width: 0;
+}
+
+.table-photo-cell {
+  flex-wrap: wrap;
 }
 
 th,

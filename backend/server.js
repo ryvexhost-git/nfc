@@ -536,6 +536,7 @@ app.get('/api/admin/cards', requireAdmin, (req, res) => {
   const db = readDb();
   const search = String(req.query.search || '').toLowerCase();
   const cards = db.cards
+    .filter((card) => card.status !== 'deleted')
     .filter((card) => !search
       || card.card_number.toLowerCase().includes(search)
       || card.holder_name.toLowerCase().includes(search)
