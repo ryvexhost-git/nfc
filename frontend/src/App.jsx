@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const DEFAULT_CARD_ID = 'RYV-001';
 const DEFAULT_BRAND_LOGO = '/rh-logo-gradient.png';
+const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
 
 const defaultSettings = {
   businessName: 'NFC-RYV',
@@ -336,11 +337,25 @@ function CustomerApp({ settings, setSettings }) {
 
     const timeout = window.setTimeout(() => {
       handleLock();
-      setMessage('Card session closed automatically after 5 minutes');
-    }, 5 * 60 * 1000);
+      setMessage('Card session closed automatically after 10 minutes');
+    }, SESSION_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeout);
   }, [token, card, settings.dailyDebitLimit]);
+
+  useEffect(() => {
+    if (!staffToken) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      localStorage.removeItem('nfc_ryv_staff_token');
+      setStaffToken(null);
+      setStaffUser(null);
+      setStaffPassword('');
+      setMessage('Staff session closed automatically after 10 minutes');
+    }, SESSION_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [staffToken]);
 
   const handleStaffLogin = async (event) => {
     event.preventDefault();
@@ -474,7 +489,7 @@ function CustomerApp({ settings, setSettings }) {
                   </div>
                   <div className="session-tile">
                     <span>Card Session</span>
-                    <strong>Auto logout in 5 min</strong>
+                    <strong>Auto logout in 10 min</strong>
                     <button type="button" onClick={() => { handleLock(); setMessage('Card session closed'); }}>Logout</button>
                   </div>
                 </section>
@@ -621,6 +636,7 @@ function AdminApp({ settings, setSettings }) {
   const [nextCardNumber, setNextCardNumber] = useState('');
   const [activeCardId, setActiveCardId] = useState('');
   const [message, setMessage] = useState('');
+  const [creatingCard, setCreatingCard] = useState(false);
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
@@ -713,10 +729,25 @@ function AdminApp({ settings, setSettings }) {
 
   const createCard = async (event) => {
     event.preventDefault();
+    if (creatingCard) return;
+    const payload = {
+      ...cardForm,
+      cardNumber: String(cardForm.cardNumber || nextCardNumber || '').trim().toUpperCase(),
+      holderName: String(cardForm.holderName || '').trim(),
+      phone: String(cardForm.phone || '').trim(),
+      position: String(cardForm.position || '').trim(),
+      password: String(cardForm.password || '').trim(),
+      balance: Number(cardForm.balance || 0),
+    };
+    if (!payload.holderName || !payload.password) {
+      setMessage('Enter holder name and card password');
+      return;
+    }
     try {
+      setCreatingCard(true);
       const data = await apiJson('/admin/cards', {
         method: 'POST',
-        body: JSON.stringify(cardForm),
+        body: JSON.stringify(payload),
       });
       setCards((prev) => [...prev, data.card].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber)));
       setNextCardNumber(data.nextCardNumber);
@@ -725,6 +756,8 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Card created');
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setCreatingCard(false);
     }
   };
 
@@ -874,6 +907,20 @@ function AdminApp({ settings, setSettings }) {
     setCurrentAdmin(null);
     setShowAccountMenu(false);
   };
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      localStorage.removeItem('nfc_ryv_admin_token');
+      setToken(null);
+      setCurrentAdmin(null);
+      setShowAccountMenu(false);
+      setMessage('Admin session closed automatically after 10 minutes');
+    }, SESSION_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [token]);
 
   const adminPages = [
     { id: 'overview', label: 'Overview', group: 'Dashboard' },
@@ -1166,10 +1213,10 @@ function AdminApp({ settings, setSettings }) {
                   <h2>Create Card</h2>
                   <p className="muted">Use the generated card number or enter one manually for a mapped NFC card.</p>
                 </div>
-                <button type="submit">Create</button>
+                <button type="submit" disabled={creatingCard}>{creatingCard ? 'Creating...' : 'Create'}</button>
               </div>
               <div className="field-grid">
-                <label>Card number<input value={cardForm.cardNumber || nextCardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value })} placeholder={nextCardNumber} /></label>
+                <label>Card number<input value={cardForm.cardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value.toUpperCase() })} placeholder={nextCardNumber} /></label>
                 <label>Holder name<input value={cardForm.holderName} onChange={(event) => setCardForm({ ...cardForm, holderName: event.target.value })} placeholder="Customer full name" required /></label>
                 <label>Phone<input value={cardForm.phone} onChange={(event) => setCardForm({ ...cardForm, phone: event.target.value })} placeholder="Customer mobile number" /></label>
                 <label>Position<input value={cardForm.position} onChange={(event) => setCardForm({ ...cardForm, position: event.target.value })} placeholder="Premium Customer" /></label>

@@ -15,6 +15,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 5000);
 const JWT_SECRET = process.env.JWT_SECRET || 'nfc-ryv-dev-secret-change-me';
 const DEFAULT_DAILY_LIMIT = Number(process.env.DAILY_DEBIT_LIMIT || 50);
+const SESSION_EXPIRES_IN = '10m';
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
 app.use(cors({
@@ -304,7 +305,7 @@ app.post('/api/login', async (req, res) => {
   const token = jwt.sign(
     { scope: 'nfc-card', cardId: card.id, cardNumber: card.card_number },
     JWT_SECRET,
-    { expiresIn: '2h' }
+    { expiresIn: SESSION_EXPIRES_IN }
   );
 
   res.json({ token, ...getCardSummary(db, card) });
@@ -381,7 +382,7 @@ app.post('/api/admin/login', async (req, res) => {
   const token = jwt.sign(
     { scope: 'admin', adminId: admin.id, username: admin.username, name: admin.name, role: admin.role },
     JWT_SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: SESSION_EXPIRES_IN }
   );
 
   res.json({
@@ -541,13 +542,15 @@ app.get('/api/admin/cards', requireAdmin, (req, res) => {
 
 app.post('/api/admin/cards', requireAdmin, async (req, res) => {
   const db = readDb();
-  const cardNumber = req.body.cardNumber || getNextCardNumber(db);
+  const cardNumber = String(req.body.cardNumber || getNextCardNumber(db)).trim().toUpperCase();
+  const holderName = String(req.body.holderName || '').trim();
+  const password = String(req.body.password || '').trim();
 
-  if (!req.body.holderName || !req.body.password) {
+  if (!holderName || !password) {
     return res.status(400).json({ error: 'Holder name and password are required' });
   }
 
-  if (db.cards.some((card) => card.card_number === cardNumber)) {
+  if (db.cards.some((card) => String(card.card_number || '').toUpperCase() === cardNumber)) {
     return res.status(409).json({ error: 'Card number already exists' });
   }
 
@@ -555,11 +558,11 @@ app.post('/api/admin/cards', requireAdmin, async (req, res) => {
   const card = {
     id: uuidv4(),
     card_number: cardNumber,
-    holder_name: req.body.holderName,
-    phone: req.body.phone || '',
+    holder_name: holderName,
+    phone: String(req.body.phone || '').trim(),
     position: String(req.body.position || '').trim(),
     photo_url: String(req.body.photoUrl || '').trim(),
-    password_hash: await bcrypt.hash(req.body.password, 10),
+    password_hash: await bcrypt.hash(password, 10),
     balance: Number(req.body.balance || 0),
     status: req.body.status || 'active',
     created_at: now,
