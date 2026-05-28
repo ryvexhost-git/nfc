@@ -1703,7 +1703,7 @@ body {
   box-shadow: none;
   border-radius: 0.25rem;
   font-size: 0.8125rem;
-  font-weight: 300;
+  font-weight: 700;
 }
 
 .filter-bar input:focus,
@@ -1726,10 +1726,10 @@ body {
 .panel label,
 .form-panel label,
 .account-popover label {
-  color: #111827;
+  color: #000000;
   letter-spacing: 0.02em;
   text-transform: none;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .muted,
@@ -1756,7 +1756,15 @@ body {
 .inline-input,
 .account-popover input {
   color: #000000;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.login-card .form-panel label,
+.login-card .form-panel input,
+.login-card .form-panel input::placeholder {
+  color: #000000;
+  font-weight: 900;
+  opacity: 1;
 }
 
 .settings-section {
