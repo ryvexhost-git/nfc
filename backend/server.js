@@ -601,8 +601,10 @@ app.put('/api/admin/cards/:cardId', requireAdmin, async (req, res) => {
   card.status = req.body.status || card.status;
   card.updated_at = new Date().toISOString();
 
-  if (req.body.password) {
-    card.password_hash = await bcrypt.hash(req.body.password, 10);
+  if (Object.prototype.hasOwnProperty.call(req.body, 'password')) {
+    const nextPassword = String(req.body.password || '').trim();
+    if (!nextPassword) return res.status(400).json({ error: 'New card PIN is required' });
+    card.password_hash = await bcrypt.hash(nextPassword, 10);
   }
 
   writeDb(db);

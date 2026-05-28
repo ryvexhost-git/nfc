@@ -639,6 +639,8 @@ function AdminApp({ settings, setSettings }) {
   const [creatingCard, setCreatingCard] = useState(false);
   const [cardForm, setCardForm] = useState({ cardNumber: '', holderName: '', phone: '', position: '', photoUrl: '', password: '', balance: 0, status: 'active' });
   const [topUpForm, setTopUpForm] = useState({ cardId: '', amount: '', note: '' });
+  const [pinResetForm, setPinResetForm] = useState({ cardId: '', password: '' });
+  const [resettingPin, setResettingPin] = useState(false);
   const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'manager' });
   const [accountPassword, setAccountPassword] = useState('');
   const [cardSearch, setCardSearch] = useState('');
@@ -771,6 +773,41 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Card updated');
     } catch (error) {
       setMessage(error.message);
+    }
+  };
+
+  const resetCardPin = async (event) => {
+    event.preventDefault();
+    if (resettingPin) return;
+    const selectedCard = cards.find((card) => card.id === pinResetForm.cardId);
+    const nextPin = String(pinResetForm.password || '').trim();
+    if (!selectedCard) {
+      setMessage('Choose a card to reset PIN');
+      return;
+    }
+    if (!nextPin) {
+      setMessage('Enter a new card PIN');
+      return;
+    }
+    try {
+      setResettingPin(true);
+      await apiJson(`/admin/cards/${selectedCard.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          holderName: selectedCard.holderName,
+          phone: selectedCard.phone,
+          position: selectedCard.position,
+          photoUrl: selectedCard.photoUrl,
+          status: selectedCard.status,
+          password: nextPin,
+        }),
+      });
+      setPinResetForm({ cardId: '', password: '' });
+      setMessage(`PIN reset for ${selectedCard.cardNumber}`);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setResettingPin(false);
     }
   };
 
@@ -1233,6 +1270,28 @@ function AdminApp({ settings, setSettings }) {
               </div>
             </form>
 
+            <form className="panel standard-page" onSubmit={resetCardPin}>
+              <div className="panel-head">
+                <div>
+                  <h2>Reset Card PIN</h2>
+                  <p className="muted">Use this when a customer forgets their card PIN. The old PIN is not required.</p>
+                </div>
+                <button type="submit" disabled={resettingPin}>{resettingPin ? 'Resetting...' : 'Reset PIN'}</button>
+              </div>
+              <div className="field-grid">
+                <label>
+                  Customer card
+                  <select value={pinResetForm.cardId} onChange={(event) => setPinResetForm({ ...pinResetForm, cardId: event.target.value })} required>
+                    <option value="">Select card</option>
+                    {cards.map((card) => (
+                      <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>New PIN<input type="password" value={pinResetForm.password} onChange={(event) => setPinResetForm({ ...pinResetForm, password: event.target.value })} placeholder="Enter new card PIN" required /></label>
+              </div>
+            </form>
+
             <section className="panel">
               <div className="panel-head">
                 <h2>Card List</h2>
@@ -1316,6 +1375,9 @@ function AdminApp({ settings, setSettings }) {
                           )}
                           <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); copyCardLink(card.cardNumber); }}>
                             Copy Link
+                          </button>
+                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); setPinResetForm({ cardId: card.id, password: '' }); setActiveCardId(card.id); }}>
+                            Reset PIN
                           </button>
                           <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
                             {card.status === 'active' ? 'Block' : 'Activate'}
