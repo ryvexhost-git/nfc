@@ -131,7 +131,7 @@ select {
 
 .home-pin-box div {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   gap: 0.4rem;
 }
 
@@ -172,13 +172,19 @@ select {
 
 .home-contact-footer {
   display: flex;
-  justify-content: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
   padding: 0.2rem 0 0.4rem;
   color: #6e604f;
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+.home-contact-logo {
+  width: 72px;
+  height: auto;
+  object-fit: contain;
 }
 
 .home-hero {
@@ -713,7 +719,7 @@ select {
 
 .card-pin-box div {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   gap: 0.25rem;
 }
 
@@ -1011,49 +1017,39 @@ select {
 }
 
 .missing-card {
+  position: relative;
   min-height: 240px;
   align-items: center;
+  overflow: hidden;
 }
 
 .missing-card-copy {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 620px;
 }
 
-.missing-card-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.missing-card-brand img {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 14px rgba(45, 25, 4, 0.18));
-}
-
-.missing-card-line {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-end;
-  margin-top: 0.3rem;
-  padding-right: 3.6rem;
-}
-
-.missing-card-line p {
+.missing-card-copy p {
   margin: 0;
   max-width: 34ch;
 }
 
-.missing-card-line img {
+.missing-card-bean {
   position: absolute;
-  right: 0;
   bottom: -0.55rem;
   width: 54px;
   height: 54px;
   object-fit: contain;
   filter: drop-shadow(0 8px 14px rgba(45, 25, 4, 0.18));
+}
+
+.missing-card-bean-left {
+  left: 1rem;
+}
+
+.missing-card-bean-right {
+  right: 1rem;
 }
 
 .compact-shell {
@@ -1107,17 +1103,27 @@ select {
 
 .admin-screen {
   min-height: 100vh;
+  min-height: 100svh;
   background:
     linear-gradient(180deg, #fffaf1 0%, #f3efe6 38%, #e8efeb 100%);
   padding: 1rem;
 }
 
+.admin-login-screen {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
 .login-card-with-mascot {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr) 285px;
   align-items: stretch;
-  width: min(100%, 760px);
-  min-height: 430px;
+  width: min(100%, 960px);
+  min-height: 540px;
   padding: 0;
   overflow: hidden;
 }
@@ -1127,7 +1133,7 @@ select {
   flex-direction: column;
   gap: 1rem;
   justify-content: center;
-  padding: 1.35rem;
+  padding: 1.6rem 1.7rem;
 }
 
 .login-mascot {
@@ -1265,6 +1271,70 @@ select {
   color: var(--ink);
 }
 
+.confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(31, 23, 14, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.confirmation-dialog {
+  width: min(100%, 420px);
+  border: 1px solid rgba(94, 73, 43, 0.16);
+  border-radius: 18px;
+  background: #fffdf9;
+  box-shadow: 0 24px 60px rgba(34, 18, 5, 0.2);
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.confirmation-kicker {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a6b44;
+}
+
+.confirmation-dialog h3 {
+  margin: 0;
+  color: #2d2315;
+  font-size: 1.2rem;
+}
+
+.confirmation-dialog p {
+  margin: 0;
+  color: #6e604f;
+  line-height: 1.55;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.confirmation-actions .ghost-button,
+.confirmation-actions button {
+  min-width: 122px;
+}
+
+.confirmation-actions .danger-button {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.confirmation-danger {
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
 .ghost-button,
 .panel button,
 .table-button {
@@ -1285,7 +1355,11 @@ select {
 }
 
 .table-button {
-  padding: 0.26rem 0.42rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.22rem 0.55rem;
   font-size: 0.68rem;
   margin: 0.08rem;
   white-space: nowrap;
@@ -1658,8 +1732,8 @@ table {
 }
 
 .actions-cell {
-  min-width: 180px;
-  max-width: 195px;
+  min-width: 0;
+  max-width: 160px;
 }
 
 .actions-cell .table-button {
@@ -2588,6 +2662,10 @@ tr:hover td {
 }
 
 @media (max-width: 480px) {
+  .admin-login-screen {
+    padding: 0;
+  }
+
   .app-screen {
     align-items: stretch;
     padding: 0;

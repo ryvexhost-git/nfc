@@ -185,6 +185,32 @@ function DecorativeMascot({ variant = 'admin', className = '', alt = '' }) {
   );
 }
 
+function ConfirmationDialog({ confirmation, confirming, onCancel, onConfirm }) {
+  if (!confirmation) return null;
+
+  return (
+    <div className="confirmation-overlay" role="presentation" onClick={confirming ? undefined : onCancel}>
+      <div
+        className={`confirmation-dialog confirmation-${confirmation.tone || 'primary'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <span className="confirmation-kicker">{confirmation.kicker || 'Please confirm'}</span>
+        <h3 id="confirmation-title">{confirmation.title}</h3>
+        <p>{confirmation.description}</p>
+        <div className="confirmation-actions">
+          <button className="ghost-button" type="button" onClick={onCancel} disabled={confirming}>Cancel</button>
+          <button className={confirmation.tone === 'danger' ? 'danger-button' : ''} type="button" onClick={onConfirm} disabled={confirming}>
+            {confirming ? (confirmation.pendingLabel || 'Working...') : (confirmation.confirmLabel || 'Confirm')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HomePage({ settings }) {
   const brandLogo = settings.logoUrl || DEFAULT_BRAND_LOGO;
   const buns = [
@@ -212,8 +238,9 @@ function HomePage({ settings }) {
             </div>
           </div>
           <div className="home-pin-box" aria-label="Card pin shortcut">
-            <span>Enter PIN</span>
-            <div>
+            <span>Card access</span>
+            <div className="home-pin-fields">
+              <input type="text" placeholder="Card number" />
               <input type="password" placeholder="Card PIN" />
               <button type="button">Unlock</button>
             </div>
@@ -292,6 +319,7 @@ function HomePage({ settings }) {
 
         {(settings.supportPhone || settings.supportEmail) && (
           <footer className="home-contact-footer">
+            <img className="home-contact-logo" src="/rh-logo-gradient.png" alt="RH logo" />
             {settings.supportPhone && <span>{settings.supportPhone}</span>}
             {settings.supportEmail && <span>{settings.supportEmail}</span>}
           </footer>
@@ -304,6 +332,7 @@ function HomePage({ settings }) {
 function CustomerApp({ settings, setSettings, cardId }) {
   const [token, setToken] = useState(null);
   const [card, setCard] = useState(null);
+  const [loginCardNumber, setLoginCardNumber] = useState(cardId);
   const [password, setPassword] = useState('');
   const [amount, setAmount] = useState('');
   const [executiveName, setExecutiveName] = useState('');
@@ -390,7 +419,7 @@ function CustomerApp({ settings, setSettings, cardId }) {
       const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardId, password }),
+        body: JSON.stringify({ cardId: String(loginCardNumber || cardId).trim().toUpperCase(), password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -588,8 +617,9 @@ function CustomerApp({ settings, setSettings, cardId }) {
               {!token && (
                 <div className="card-pin-area">
                   <form className="card-pin-box" onSubmit={handleLogin}>
-                    <span>Enter PIN</span>
-                    <div>
+                    <span>Card access</span>
+                    <div className="card-pin-fields">
+                      <input type="text" value={loginCardNumber} onChange={(event) => setLoginCardNumber(event.target.value.toUpperCase())} placeholder="Card number" required />
                       <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Card PIN" required />
                       <button type="submit" disabled={busy}>{busy ? 'Checking...' : 'Unlock'}</button>
                     </div>
@@ -602,15 +632,11 @@ function CustomerApp({ settings, setSettings, cardId }) {
             <section className="card-panel missing-card" style={cardStyle}>
               <div className="missing-card-copy">
                 <span className="label">NFC Card</span>
-                <div className="missing-card-brand">
-                  <h2>The Coffeebun.in</h2>
-                  <img src="/bean.png" alt="" />
-                </div>
-                <div className="missing-card-line">
-                  <p>There are no active cards displayed for the user</p>
-                  <img src="/bean1.png" alt="" />
-                </div>
+                <h2>Card not found</h2>
+                <p>Please contact the counter team to verify this card.</p>
               </div>
+              <img className="missing-card-bean missing-card-bean-left" src="/bean1.png" alt="" />
+              <img className="missing-card-bean missing-card-bean-right" src="/bean.png" alt="" />
             </section>
           )}
         </section>
@@ -786,6 +812,8 @@ function AdminApp({ settings, setSettings }) {
   const [analyticsInterval, setAnalyticsInterval] = useState('day');
   const [analyticsRange, setAnalyticsRange] = useState('last30');
   const [analyticsChartType, setAnalyticsChartType] = useState('bar');
+  const [confirmation, setConfirmation] = useState(null);
+  const [confirmingAction, setConfirmingAction] = useState(false);
 
   const adminHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -847,10 +875,27 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
-  const saveSettings = async (event) => {
-    event.preventDefault();
-    if (savingSettings) return;
-    const payload = {
+  const requestConfirmation = ({ title, description, confirmLabel, pendingLabel, tone = 'primary', kicker, onConfirm }) => {
+    setConfirmation({ title, description, confirmLabel, pendingLabel, tone, kicker, onConfirm });
+  };
+
+  const cancelConfirmation = () => {
+    if (confirmingAction) return;
+    setConfirmation(null);
+  };
+
+  const runConfirmation = async () => {
+    if (!confirmation?.onConfirm || confirmingAction) return;
+    try {
+      setConfirmingAction(true);
+      await confirmation.onConfirm();
+      setConfirmation(null);
+    } finally {
+      setConfirmingAction(false);
+    }
+  };
+
+  const buildSettingsPayload = () => ({
       ...settings,
       businessName: String(settings.businessName || '').trim() || 'THE COFFEEBUN',
       legalName: String(settings.legalName || '').trim(),
@@ -874,7 +919,9 @@ function AdminApp({ settings, setSettings }) {
       termsText: String(settings.termsText || '').trim(),
       enableCustomerPhoto: settings.enableCustomerPhoto !== false,
       requireExecutiveName: settings.requireExecutiveName !== false,
-    };
+    });
+
+  const persistSettings = async (payload) => {
     try {
       setSavingSettings(true);
       const data = await apiJson('/admin/settings', {
@@ -894,10 +941,21 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
-  const createCard = async (event) => {
+  const saveSettings = async (event) => {
     event.preventDefault();
-    if (creatingCard) return;
-    const payload = {
+    if (savingSettings) return;
+    const payload = buildSettingsPayload();
+    requestConfirmation({
+      kicker: 'Business update',
+      title: 'Save these business settings?',
+      description: `This will update the admin and customer-facing setup for ${payload.businessName || 'your business'}.`,
+      confirmLabel: 'Save Settings',
+      pendingLabel: 'Saving...',
+      onConfirm: () => persistSettings(payload),
+    });
+  };
+
+  const buildCardPayload = () => ({
       ...cardForm,
       cardNumber: String(cardForm.cardNumber || nextCardNumber || '').trim().toUpperCase(),
       holderName: String(cardForm.holderName || '').trim(),
@@ -905,11 +963,9 @@ function AdminApp({ settings, setSettings }) {
       position: String(cardForm.position || '').trim(),
       password: String(cardForm.password || '').trim(),
       balance: Number(cardForm.balance || 0),
-    };
-    if (!payload.holderName || !payload.password) {
-      setMessage('Enter holder name and card password');
-      return;
-    }
+    });
+
+  const createCardRecord = async (payload) => {
     try {
       setCreatingCard(true);
       const data = await apiJson('/admin/cards', {
@@ -929,6 +985,24 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
+  const createCard = async (event) => {
+    event.preventDefault();
+    if (creatingCard) return;
+    const payload = buildCardPayload();
+    if (!payload.holderName || !payload.password) {
+      setMessage('Enter holder name and card password');
+      return;
+    }
+    requestConfirmation({
+      kicker: 'Create card',
+      title: 'Create this customer card?',
+      description: `${payload.holderName} will be added with card number ${payload.cardNumber || nextCardNumber} and an opening balance of ${formatMoney(payload.balance, settings)}.`,
+      confirmLabel: 'Create Card',
+      pendingLabel: 'Creating...',
+      onConfirm: () => createCardRecord(payload),
+    });
+  };
+
   const updateCard = async (card, patch) => {
     try {
       const data = await apiJson(`/admin/cards/${card.id}`, {
@@ -940,6 +1014,18 @@ function AdminApp({ settings, setSettings }) {
     } catch (error) {
       setMessage(error.message);
     }
+  };
+
+  const confirmCardUpdate = (card, patch, config) => {
+    requestConfirmation({
+      tone: config.tone,
+      kicker: config.kicker,
+      title: config.title,
+      description: config.description,
+      confirmLabel: config.confirmLabel,
+      pendingLabel: config.pendingLabel,
+      onConfirm: () => updateCard(card, patch),
+    });
   };
 
   const resetCardPin = async (event) => {
@@ -955,7 +1041,15 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Enter a new card PIN');
       return;
     }
-    try {
+    requestConfirmation({
+      kicker: 'PIN reset',
+      title: 'Reset this card PIN?',
+      description: `This will replace the current PIN for ${selectedCard.holderName} (${selectedCard.cardNumber}).`,
+      confirmLabel: 'Reset PIN',
+      pendingLabel: 'Resetting...',
+      tone: 'danger',
+      onConfirm: async () => {
+        try {
       setResettingPin(true);
       await apiJson(`/admin/cards/${selectedCard.id}`, {
         method: 'PUT',
@@ -975,6 +1069,8 @@ function AdminApp({ settings, setSettings }) {
     } finally {
       setResettingPin(false);
     }
+      },
+    });
   };
 
   const handlePhotoUpload = async (event, callback) => {
@@ -999,18 +1095,7 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
-  const topUpCard = async (event) => {
-    event.preventDefault();
-    if (!topUpForm.cardId) {
-      setMessage('Choose a card to top up');
-      return;
-    }
-    const selectedCard = cards.find((card) => card.id === topUpForm.cardId);
-    const nextBalance = Number(selectedCard?.balance || 0) + Number(topUpForm.amount || 0);
-    if (Number(settings.maxCardBalance || 0) > 0 && nextBalance > Number(settings.maxCardBalance)) {
-      setMessage(`Maximum card balance is ${formatMoney(settings.maxCardBalance, settings)}`);
-      return;
-    }
+  const performTopUp = async () => {
     try {
       await apiJson(`/admin/cards/${topUpForm.cardId}/topup`, {
         method: 'POST',
@@ -1024,9 +1109,47 @@ function AdminApp({ settings, setSettings }) {
     }
   };
 
+  const topUpCard = async (event) => {
+    event.preventDefault();
+    if (!topUpForm.cardId) {
+      setMessage('Choose a card to top up');
+      return;
+    }
+    const selectedCard = cards.find((card) => card.id === topUpForm.cardId);
+    const amount = Number(topUpForm.amount || 0);
+    if (amount <= 0) {
+      setMessage('Enter a valid top-up amount');
+      return;
+    }
+    const nextBalance = Number(selectedCard?.balance || 0) + Number(topUpForm.amount || 0);
+    if (Number(settings.maxCardBalance || 0) > 0 && nextBalance > Number(settings.maxCardBalance)) {
+      setMessage(`Maximum card balance is ${formatMoney(settings.maxCardBalance, settings)}`);
+      return;
+    }
+    requestConfirmation({
+      kicker: 'Balance top-up',
+      title: 'Add balance to this card?',
+      description: `${selectedCard?.holderName || 'This customer'} will receive ${formatMoney(amount, settings)}. New balance will be ${formatMoney(nextBalance, settings)}.`,
+      confirmLabel: 'Top Up Card',
+      pendingLabel: 'Topping Up...',
+      onConfirm: performTopUp,
+    });
+  };
+
   const createUser = async (event) => {
     event.preventDefault();
-    try {
+    if (!String(userForm.username || '').trim() || !String(userForm.name || '').trim() || !String(userForm.password || '').trim()) {
+      setMessage('Enter username, name, and password');
+      return;
+    }
+    requestConfirmation({
+      kicker: 'Employee setup',
+      title: 'Create this employee login?',
+      description: `${userForm.name} will be added as a ${userForm.role} with username ${userForm.username}.`,
+      confirmLabel: 'Create Employee',
+      pendingLabel: 'Creating...',
+      onConfirm: async () => {
+        try {
       const data = await apiJson('/admin/users', {
         method: 'POST',
         body: JSON.stringify(userForm),
@@ -1037,6 +1160,8 @@ function AdminApp({ settings, setSettings }) {
     } catch (error) {
       setMessage(error.message);
     }
+      },
+    });
   };
 
   const resetOwnPassword = async (event) => {
@@ -1045,40 +1170,72 @@ function AdminApp({ settings, setSettings }) {
       setMessage('Enter a new password');
       return;
     }
-    try {
-      await apiJson('/admin/me/password', {
-        method: 'PUT',
-        body: JSON.stringify({ password: accountPassword }),
-      });
-      setAccountPassword('');
-      setShowAccountMenu(false);
-      setMessage('Password reset successfully');
-    } catch (error) {
-      setMessage(error.message);
-    }
+    requestConfirmation({
+      kicker: 'Password reset',
+      title: 'Change your admin password?',
+      description: 'You will need to use the new password the next time you sign in.',
+      confirmLabel: 'Reset Password',
+      pendingLabel: 'Resetting...',
+      tone: 'danger',
+      onConfirm: async () => {
+        try {
+          await apiJson('/admin/me/password', {
+            method: 'PUT',
+            body: JSON.stringify({ password: accountPassword }),
+          });
+          setAccountPassword('');
+          setShowAccountMenu(false);
+          setMessage('Password reset successfully');
+        } catch (error) {
+          setMessage(error.message);
+        }
+      },
+    });
   };
 
   const deleteUser = async (userId) => {
-    try {
-      await apiJson(`/admin/users/${userId}`, { method: 'DELETE' });
-      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, active: false } : user)));
-      setMessage('User disabled');
-    } catch (error) {
-      setMessage(error.message);
-    }
+    const user = users.find((item) => item.id === userId);
+    requestConfirmation({
+      kicker: 'Disable employee',
+      title: 'Disable this employee login?',
+      description: `${user?.name || user?.username || 'This user'} will no longer be able to sign in.`,
+      confirmLabel: 'Disable Employee',
+      pendingLabel: 'Disabling...',
+      tone: 'danger',
+      onConfirm: async () => {
+        try {
+          await apiJson(`/admin/users/${userId}`, { method: 'DELETE' });
+          setUsers((prev) => prev.map((entry) => (entry.id === userId ? { ...entry, active: false } : entry)));
+          setMessage('User disabled');
+        } catch (error) {
+          setMessage(error.message);
+        }
+      },
+    });
   };
 
   const deleteCard = async (cardId) => {
-    try {
-      await apiJson(`/admin/cards/${cardId}`, { method: 'DELETE' });
-      setCards((prev) => prev.filter((card) => card.id !== cardId));
-      setActiveCardId((value) => (value === cardId ? '' : value));
-      setTopUpForm((prev) => (prev.cardId === cardId ? { cardId: '', amount: '', note: '' } : prev));
-      setPinResetForm((prev) => (prev.cardId === cardId ? { cardId: '', password: '' } : prev));
-      setMessage('Card user deleted');
-    } catch (error) {
-      setMessage(error.message);
-    }
+    const card = cards.find((item) => item.id === cardId);
+    requestConfirmation({
+      kicker: 'Delete card',
+      title: 'Delete this card permanently?',
+      description: `${card?.holderName || 'This customer'} and card ${card?.cardNumber || ''} will be removed from the active list.`,
+      confirmLabel: 'Delete Card',
+      pendingLabel: 'Deleting...',
+      tone: 'danger',
+      onConfirm: async () => {
+        try {
+          await apiJson(`/admin/cards/${cardId}`, { method: 'DELETE' });
+          setCards((prev) => prev.filter((entry) => entry.id !== cardId));
+          setActiveCardId((value) => (value === cardId ? '' : value));
+          setTopUpForm((prev) => (prev.cardId === cardId ? { cardId: '', amount: '', note: '' } : prev));
+          setPinResetForm((prev) => (prev.cardId === cardId ? { cardId: '', password: '' } : prev));
+          setMessage('Card user deleted');
+        } catch (error) {
+          setMessage(error.message);
+        }
+      },
+    });
   };
 
   const exportTransactions = () => {
@@ -1110,10 +1267,19 @@ function AdminApp({ settings, setSettings }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('nfc_ryv_admin_token');
-    setToken(null);
-    setCurrentAdmin(null);
-    setShowAccountMenu(false);
+    requestConfirmation({
+      kicker: 'Sign out',
+      title: 'Log out of the admin panel?',
+      description: 'Your current admin session will be closed on this device.',
+      confirmLabel: 'Log Out',
+      pendingLabel: 'Logging Out...',
+      onConfirm: async () => {
+        localStorage.removeItem('nfc_ryv_admin_token');
+        setToken(null);
+        setCurrentAdmin(null);
+        setShowAccountMenu(false);
+      },
+    });
   };
 
   useEffect(() => {
@@ -1299,7 +1465,24 @@ function AdminApp({ settings, setSettings }) {
                   <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); setPinResetForm({ cardId: card.id, password: '' }); setActiveCardId(card.id); setActiveAdminPage('pin-reset'); }}>
                     Reset PIN
                   </button>
-                  <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
+                  <button
+                    className="table-button"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const nextStatus = card.status === 'active' ? 'blocked' : 'active';
+                      confirmCardUpdate(card, { status: nextStatus }, {
+                        kicker: nextStatus === 'blocked' ? 'Block card' : 'Activate card',
+                        title: nextStatus === 'blocked' ? 'Block this customer card?' : 'Activate this customer card?',
+                        description: nextStatus === 'blocked'
+                          ? `${card.holderName} will not be able to use card ${card.cardNumber} until it is activated again.`
+                          : `${card.holderName} will be able to use card ${card.cardNumber} again.`,
+                        confirmLabel: nextStatus === 'blocked' ? 'Block Card' : 'Activate Card',
+                        pendingLabel: nextStatus === 'blocked' ? 'Blocking...' : 'Activating...',
+                        tone: nextStatus === 'blocked' ? 'danger' : 'primary',
+                      });
+                    }}
+                  >
                     {card.status === 'active' ? 'Block' : 'Activate'}
                   </button>
                   <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
@@ -1317,7 +1500,7 @@ function AdminApp({ settings, setSettings }) {
 
   if (!token) {
     return (
-      <main className="admin-screen">
+      <main className="admin-screen admin-login-screen">
         <section className="login-card login-card-with-mascot">
           <div className="login-content">
             <Brand settings={settings} eyebrow="Admin login" titleOverride="THE COFFEE BUN" />
@@ -1343,6 +1526,7 @@ function AdminApp({ settings, setSettings }) {
   return (
     <main className="admin-screen">
       <section className="admin-shell">
+        <ConfirmationDialog confirmation={confirmation} confirming={confirmingAction} onCancel={cancelConfirmation} onConfirm={runConfirmation} />
         <aside className="admin-sidebar">
           <Brand settings={settings} />
           <DecorativeMascot variant="admin" className="sidebar-mascot" />
