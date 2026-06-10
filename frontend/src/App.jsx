@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-const DEFAULT_CARD_ID = 'TCB-8645';
 const DEFAULT_BRAND_LOGO = '/favicon-bun.png';
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -147,7 +146,7 @@ function getCardIdFromUrl() {
   const queryCard = params.get('card');
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const pathCard = pathParts[0] === 'admin' ? null : pathParts[0];
-  return queryCard || pathCard || DEFAULT_CARD_ID;
+  return queryCard || pathCard || null;
 }
 
 function getAdminToken() {
@@ -184,8 +183,113 @@ function DecorativeMascot({ variant = 'admin', className = '', alt = '' }) {
   );
 }
 
-function CustomerApp({ settings, setSettings }) {
-  const cardId = useMemo(() => getCardIdFromUrl(), []);
+function HomePage({ settings }) {
+  const brandLogo = settings.logoUrl || DEFAULT_BRAND_LOGO;
+  const buns = [
+    { name: 'Classic Coffee Bun', note: 'Warm signature bun with soft center and buttery crust.', image: '/Mascot_Bun_Coffee_Combo_Table_REFERENCE.jpeg' },
+    { name: 'Cream Bun Pairing', note: 'Fresh-baked bun served with our smooth house cream finish.', image: '/cbimgback.jpg' },
+  ];
+  const wraps = [
+    { name: 'Paneer Wrap', note: 'Toasted wrap with paneer, lettuce, and creamy sauce.', image: '/Mascot_Cafe_Product_Reference_Grok_Watermark.jpeg' },
+    { name: 'Chicken Tikka Wrap', note: 'Spiced grilled filling with crisp vegetables and mayo.', image: '/Mascot_Cafe_Counter_Combo_REFERENCE.jpeg' },
+  ];
+  const drinks = [
+    { name: 'Cold Coffee Float', note: 'Icy coffee with sweet foam and a chilled finish.', image: '/Mascot_Bun_Coffee_Poster_Text_REFERENCE.jpeg' },
+    { name: 'Special Bun Latte', note: 'House latte crafted to pair with our premium buns.', image: '/Mascot_Pair_Poster_Location_REFERENCE.jpeg' },
+  ];
+
+  return (
+    <main className="home-screen">
+      <section className="home-shell">
+        <header className="home-header">
+          <div className="home-brand">
+            <img className={`brand-logo ${settings.logoUrl ? '' : 'rh-brand-logo'}`} src={brandLogo} alt={settings.businessName} />
+            <div>
+              <span className="home-eyebrow">Coffee, buns, wraps, and sips</span>
+              <h1>{settings.businessName || 'THE COFFEEBUN'}</h1>
+            </div>
+          </div>
+          <div className="home-contact">
+            {settings.supportPhone && <span>{settings.supportPhone}</span>}
+            {settings.supportEmail && <span>{settings.supportEmail}</span>}
+          </div>
+        </header>
+
+        <section className="home-hero">
+          <div className="home-copy">
+            <span className="home-pill">Fresh from The Coffeebun</span>
+            <h2>Special buns, easy wraps, and signature drinks for your everyday coffee break.</h2>
+            <p>Drop in for soft coffee buns, filling wraps, and café-style drinks served with The Coffeebun character and warmth.</p>
+            <div className="home-meta">
+              <span>Fresh baked daily</span>
+              <span>Quick takeaway wraps</span>
+              <span>Hot and cold specials</span>
+            </div>
+          </div>
+          <div className="home-hero-media">
+            <img src="/beans.png" alt="The Coffeebun bun mascots" />
+          </div>
+        </section>
+
+        <section className="menu-section">
+          <div className="menu-section-head">
+            <h3>Special Buns</h3>
+            <p>Golden baked favorites made to pair with coffee.</p>
+          </div>
+          <div className="menu-grid">
+            {buns.map((item) => (
+              <article key={item.name} className="menu-card">
+                <img src={item.image} alt={item.name} />
+                <div>
+                  <h4>{item.name}</h4>
+                  <p>{item.note}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="menu-section">
+          <div className="menu-section-head">
+            <h3>Wraps</h3>
+            <p>Quick, filling picks for a savory bite.</p>
+          </div>
+          <div className="menu-grid menu-grid-tight">
+            {wraps.map((item) => (
+              <article key={item.name} className="menu-card">
+                <img src={item.image} alt={item.name} />
+                <div>
+                  <h4>{item.name}</h4>
+                  <p>{item.note}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="menu-section">
+          <div className="menu-section-head">
+            <h3>Special Drinks</h3>
+            <p>Smooth café drinks to complete the table.</p>
+          </div>
+          <div className="menu-grid menu-grid-tight">
+            {drinks.map((item) => (
+              <article key={item.name} className="menu-card">
+                <img src={item.image} alt={item.name} />
+                <div>
+                  <h4>{item.name}</h4>
+                  <p>{item.note}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function CustomerApp({ settings, setSettings, cardId }) {
   const [token, setToken] = useState(null);
   const [card, setCard] = useState(null);
   const [password, setPassword] = useState('');
@@ -484,10 +588,16 @@ function CustomerApp({ settings, setSettings }) {
             </section>
           ) : (
             <section className="card-panel missing-card" style={cardStyle}>
-              <div>
+              <div className="missing-card-copy">
                 <span className="label">NFC Card</span>
-                <h2>The Coffeebun.in</h2>
-                <p>Please contact the counter team to verify this card.</p>
+                <div className="missing-card-brand">
+                  <h2>The Coffeebun.in</h2>
+                  <img src="/bean.png" alt="" />
+                </div>
+                <div className="missing-card-line">
+                  <p>There are no active cards displayed for the user</p>
+                  <img src="/bean1.png" alt="" />
+                </div>
               </div>
             </section>
           )}
@@ -612,7 +722,12 @@ function CustomerApp({ settings, setSettings }) {
 
         {(settings.supportPhone || settings.supportEmail) && (
           <footer className="support-footer">
-            {settings.supportPhone && <span>{settings.supportPhone}</span>}
+            {settings.supportPhone && (
+              <div className="support-contact">
+                <span>For support</span>
+                <strong>{settings.supportPhone}</strong>
+              </div>
+            )}
             {settings.supportEmail && <span>{settings.supportEmail}</span>}
             {settings.websiteUrl && <span>{settings.websiteUrl}</span>}
           </footer>
@@ -1738,6 +1853,7 @@ function AdminApp({ settings, setSettings }) {
 function App() {
   const [settings, setSettings] = useState(defaultSettings);
   const isAdmin = window.location.pathname.startsWith('/admin');
+  const cardId = useMemo(() => getCardIdFromUrl(), []);
 
   useEffect(() => {
     fetch(`${API_BASE}/settings/public`)
@@ -1754,8 +1870,10 @@ function App() {
 
   return isAdmin ? (
     <AdminApp settings={settings} setSettings={setSettings} />
+  ) : !cardId ? (
+    <HomePage settings={settings} />
   ) : (
-    <CustomerApp settings={settings} setSettings={setSettings} />
+    <CustomerApp settings={settings} setSettings={setSettings} cardId={cardId} />
   );
 }
 
