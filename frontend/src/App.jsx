@@ -157,8 +157,9 @@ function getStaffToken() {
   return localStorage.getItem('nfc_ryv_staff_token');
 }
 
-function Brand({ settings }) {
+function Brand({ settings, eyebrow = 'NFC wallet', titleOverride = '' }) {
   const brandLogo = settings.logoUrl || DEFAULT_BRAND_LOGO;
+  const titleText = titleOverride || settings.businessName;
 
   return (
     <div className="brand-lockup">
@@ -168,8 +169,8 @@ function Brand({ settings }) {
         <div className="brand-mark">{settings.businessName?.slice(0, 1) || 'N'}</div>
       )}
       <div>
-        <span>NFC wallet</span>
-        <h1>{settings.businessName}</h1>
+        <span>{eyebrow}</span>
+        <h1>{titleText}</h1>
       </div>
     </div>
   );
@@ -179,6 +180,7 @@ function DecorativeMascot({ variant = 'admin', className = '', alt = '' }) {
   return (
     <div className={`mascot-frame mascot-${variant} ${className}`} aria-hidden={!alt}>
       <img src={mascotAssets[variant] || mascotAssets.admin} alt={alt} />
+      {variant === 'login' && <span className="mascot-image-label">THE COFFEE BUN</span>}
     </div>
   );
 }
@@ -1204,7 +1206,7 @@ function AdminApp({ settings, setSettings }) {
       <main className="admin-screen">
         <section className="login-card login-card-with-mascot">
           <div className="login-content">
-            <Brand settings={settings} />
+            <Brand settings={settings} eyebrow="Admin login" titleOverride="THE COFFEE BUN" />
             <form className="form-panel" onSubmit={handleAdminLogin}>
               <label>
                 Admin username
