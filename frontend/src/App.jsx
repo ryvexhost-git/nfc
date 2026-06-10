@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-const DEFAULT_CARD_ID = 'RYV-001';
+const DEFAULT_CARD_ID = 'TCB-8645';
 const DEFAULT_BRAND_LOGO = '/favicon-bun.png';
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -20,7 +20,7 @@ const defaultSettings = {
   lowBalanceThreshold: 50,
   maxCardBalance: 5000,
   openingBalanceDefault: 0,
-  cardPrefix: 'RYV',
+  cardPrefix: 'TCB',
   nfcBaseUrl: '',
   invoicePrefix: 'NFC',
   timezone: 'Asia/Kolkata',
@@ -426,7 +426,7 @@ function CustomerApp({ settings, setSettings }) {
   if (loading) {
     return (
       <main className="app-screen">
-        <section className="app-shell compact-shell loading-shell">Loading card...</section>
+        <section className="app-shell compact-shell customer-shell loading-shell">Loading card...</section>
       </main>
     );
   }
@@ -437,22 +437,22 @@ function CustomerApp({ settings, setSettings }) {
 
   return (
     <main className="app-screen">
-      <section className="app-shell compact-shell">
+      <section className={`app-shell compact-shell customer-shell ${token ? 'customer-shell-active' : 'customer-shell-locked'}`}>
         <Brand settings={settings} />
 
-        {card ? (
-          <>
-            <section className="card-panel" style={cardStyle}>
+        <section className={`card-stage ${token ? 'card-stage-active' : 'card-stage-locked'}`}>
+          {card ? (
+            <section className={`card-panel ${token ? 'card-panel-active' : 'card-panel-locked'}`} style={cardStyle}>
               {token && (
                 <div className="card-business-lockup">
                   <img src={settings.logoUrl || DEFAULT_BRAND_LOGO} alt={settings.businessName} />
                   <span>{settings.businessName || 'THE COFFEEBUN'}</span>
                 </div>
               )}
-              <div className="card-profile-block">
+              <div className={`card-profile-block ${token ? 'card-profile-active' : 'card-profile-locked'}`}>
                 <div>
-                  <span className="label">Card Holder</span>
-                  <h2>{card.holderName}</h2>
+                  <h2>{card.cardNumber}</h2>
+                  <p>{card.holderName}</p>
                   {card.position && <span className="position-badge">{card.position}</span>}
                 </div>
                 <div className="card-photo-stack">
@@ -477,97 +477,97 @@ function CustomerApp({ settings, setSettings }) {
                 </div>
               )}
             </section>
+          ) : (
+            <section className="card-panel missing-card" style={cardStyle}>
+              <div>
+                <span className="label">NFC Card</span>
+                <h2>Card not found</h2>
+                <p>Please contact the counter team to verify this card.</p>
+              </div>
+            </section>
+          )}
+        </section>
 
-            {token && (
-              <>
-                <section className="balance-grid">
-                  <div>
-                    <span>Available Balance</span>
-                    <strong>{formatMoney(card.balance, settings)}</strong>
-                  </div>
-                  <div>
-                    <span>Left Today</span>
-                    <strong>{formatMoney(remainingDailyLimit, settings)}</strong>
-                  </div>
-                  <div>
-                    <span>Used Today</span>
-                    <strong>{formatMoney(debitedToday, settings)}</strong>
-                  </div>
-                  <div className="session-tile">
-                    <span>Card Session</span>
-                    <strong>Auto logout in 10 min</strong>
-                    <button type="button" onClick={() => { handleLock(); setMessage('Card session closed'); }}>Logout</button>
-                  </div>
-                </section>
+        {token && (
+          <>
+            <section className="balance-grid">
+              <div>
+                <span>Available Balance</span>
+                <strong>{formatMoney(card.balance, settings)}</strong>
+              </div>
+              <div>
+                <span>Left Today</span>
+                <strong>{formatMoney(remainingDailyLimit, settings)}</strong>
+              </div>
+              <div>
+                <span>Used Today</span>
+                <strong>{formatMoney(debitedToday, settings)}</strong>
+              </div>
+              <div className="session-tile">
+                <span>Card Session</span>
+                <strong>Auto logout in 10 min</strong>
+                <button type="button" onClick={() => { handleLock(); setMessage('Card session closed'); }}>Logout</button>
+              </div>
+            </section>
 
-                <form className="form-panel" onSubmit={handleDebit}>
-                  <label>
-                    Executive name
-                    <input type="text" value={executiveName} onChange={(event) => setExecutiveName(event.target.value)} placeholder="Counter executive" required={settings.requireExecutiveName !== false} />
-                  </label>
-                  <label>
-                    Debit amount
-                    <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min="1" max={settings.dailyDebitLimit} placeholder={`Maximum ${formatMoney(settings.dailyDebitLimit, settings)} per day`} required />
-                  </label>
-                  <label>
-                    Note
-                    <input type="text" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Purpose" />
-                  </label>
-                  <button type="submit" disabled={busy || remainingDailyLimit <= 0}>{busy ? 'Processing...' : 'Debit Card'}</button>
-                </form>
+            <form className="form-panel" onSubmit={handleDebit}>
+              <label>
+                Executive name
+                <input type="text" value={executiveName} onChange={(event) => setExecutiveName(event.target.value)} placeholder="Counter executive" required={settings.requireExecutiveName !== false} />
+              </label>
+              <label>
+                Debit amount
+                <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min="1" max={settings.dailyDebitLimit} placeholder={`Maximum ${formatMoney(settings.dailyDebitLimit, settings)} per day`} required />
+              </label>
+              <label>
+                Note
+                <input type="text" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Purpose" />
+              </label>
+              <button type="submit" disabled={busy || remainingDailyLimit <= 0}>{busy ? 'Processing...' : 'Debit Card'}</button>
+            </form>
 
-                <section className="history-panel">
-                  <div className="history-head">
-                    <h3>Recent Debits</h3>
-                  </div>
-                  {debits.length === 0 ? (
-                    <p>No debits yet.</p>
-                  ) : (
-                    <div className="transaction-list">
-                      {debits.map((transaction) => (
-                        <article key={transaction.id} className="transaction-row">
-                          <div>
-                            <strong>{formatMoney(transaction.amount, settings)}</strong>
-                            <span>{transaction.note || transaction.actor || 'Counter debit'}</span>
-                          </div>
-                          <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </section>
+            <section className="history-panel">
+              <div className="history-head">
+                <h3>Recent Debits</h3>
+              </div>
+              {debits.length === 0 ? (
+                <p>No debits yet.</p>
+              ) : (
+                <div className="transaction-list">
+                  {debits.map((transaction) => (
+                    <article key={transaction.id} className="transaction-row">
+                      <div>
+                        <strong>{formatMoney(transaction.amount, settings)}</strong>
+                        <span>{transaction.note || transaction.actor || 'Counter debit'}</span>
+                      </div>
+                      <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
 
-                <section className="history-panel">
-                  <div className="history-head">
-                    <h3>Top-up Details</h3>
-                  </div>
-                  {topups.length === 0 ? (
-                    <p>No top-ups yet.</p>
-                  ) : (
-                    <div className="transaction-list">
-                      {topups.map((transaction) => (
-                        <article key={transaction.id} className="transaction-row topup-row">
-                          <div>
-                            <strong>{formatMoney(transaction.amount, settings)}</strong>
-                            <span>{transaction.note || transaction.actor || 'Balance top-up'}</span>
-                          </div>
-                          <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </>
-            )}
+            <section className="history-panel">
+              <div className="history-head">
+                <h3>Top-up Details</h3>
+              </div>
+              {topups.length === 0 ? (
+                <p>No top-ups yet.</p>
+              ) : (
+                <div className="transaction-list">
+                  {topups.map((transaction) => (
+                    <article key={transaction.id} className="transaction-row topup-row">
+                      <div>
+                        <strong>{formatMoney(transaction.amount, settings)}</strong>
+                        <span>{transaction.note || transaction.actor || 'Balance top-up'}</span>
+                      </div>
+                      <time>{new Date(transaction.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
-        ) : (
-          <section className="card-panel missing-card" style={cardStyle}>
-            <div>
-              <span className="label">NFC Card</span>
-              <h2>Card not found</h2>
-              <p>Please contact the counter team to verify this card.</p>
-            </div>
-          </section>
         )}
 
         <button className="staff-login-link" type="button" onClick={() => setShowStaffLogin((value) => !value)}>
@@ -738,7 +738,7 @@ function AdminApp({ settings, setSettings }) {
       lowBalanceThreshold: Number(settings.lowBalanceThreshold || 0),
       maxCardBalance: Number(settings.maxCardBalance || 0),
       openingBalanceDefault: Number(settings.openingBalanceDefault || 0),
-      cardPrefix: String(settings.cardPrefix || 'RYV').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'RYV',
+      cardPrefix: String(settings.cardPrefix || 'TCB').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'TCB',
       nfcBaseUrl: String(settings.nfcBaseUrl || '').trim(),
       invoicePrefix: String(settings.invoicePrefix || 'NFC').trim().toUpperCase() || 'NFC',
       timezone: String(settings.timezone || 'Asia/Kolkata').trim() || 'Asia/Kolkata',
@@ -1179,7 +1179,7 @@ function AdminApp({ settings, setSettings }) {
                 </div>
                 <div className="detail-list">
                   <div><span>Business</span><strong>{settings.businessName || 'Not set'}</strong></div>
-                  <div><span>Card prefix</span><strong>{settings.cardPrefix || 'RYV'}</strong></div>
+                  <div><span>Card prefix</span><strong>{settings.cardPrefix || 'TCB'}</strong></div>
                   <div><span>Daily debit limit</span><strong>{formatMoney(settings.dailyDebitLimit, settings)}</strong></div>
                   <div><span>Transactions</span><strong>{transactions.length}</strong></div>
                   <div><span>Support</span><strong>{settings.supportPhone || settings.supportEmail || 'Not set'}</strong></div>
@@ -1263,7 +1263,7 @@ function AdminApp({ settings, setSettings }) {
             <section className="settings-section">
               <h3>NFC & Card Defaults</h3>
               <div className="field-grid">
-                <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} placeholder="RYV" /></label>
+                <label>Card prefix<input value={settings.cardPrefix} onChange={(event) => setSettings({ ...settings, cardPrefix: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} placeholder="TCB" /></label>
                 <label>NFC base URL<input value={settings.nfcBaseUrl} onChange={(event) => setSettings({ ...settings, nfcBaseUrl: event.target.value })} placeholder="https://nfc.domain.com" /></label>
                 <label>Invoice prefix<input value={settings.invoicePrefix} onChange={(event) => setSettings({ ...settings, invoicePrefix: event.target.value.toUpperCase() })} placeholder="NFC" /></label>
                 <label className="toggle-row"><input type="checkbox" checked={settings.enableCustomerPhoto !== false} onChange={(event) => setSettings({ ...settings, enableCustomerPhoto: event.target.checked })} /> Enable customer photo</label>
@@ -1280,7 +1280,7 @@ function AdminApp({ settings, setSettings }) {
             </section>
 
             <div className="settings-summary">
-              <span>Next card number: <strong>{nextCardNumber || `${settings.cardPrefix || 'RYV'}-001`}</strong></span>
+              <span>Next card number: <strong>{nextCardNumber || `${settings.cardPrefix || 'TCB'}-001`}</strong></span>
               <span>Low balance below: <strong>{formatMoney(settings.lowBalanceThreshold, settings)}</strong></span>
             </div>
           </form>

@@ -48,6 +48,7 @@ select {
 
 .app-screen {
   min-height: 100vh;
+  min-height: 100svh;
   background: linear-gradient(180deg, #fffaf1 0%, #edf3ef 55%, #e7eeea 100%);
   display: flex;
   align-items: center;
@@ -168,6 +169,29 @@ select {
   position: relative;
 }
 
+.card-panel-locked {
+  min-height: 296px;
+  padding: 1.2rem 1.25rem 1rem;
+  overflow: hidden;
+}
+
+.card-panel-active {
+  min-height: 240px;
+  padding: 1.2rem 1.25rem 4.6rem;
+  overflow: hidden;
+}
+
+.card-panel-locked::before {
+  content: "";
+  position: absolute;
+  inset: auto -2.4rem -3.1rem auto;
+  width: 165px;
+  height: 165px;
+  border-radius: 50%;
+  background: rgba(243, 192, 112, 0.28);
+  pointer-events: none;
+}
+
 .card-panel h2 {
   font-size: 1.75rem;
   color: #ffffff;
@@ -200,6 +224,12 @@ select {
   background: rgba(255, 255, 255, 0.14);
   padding: 0.34rem 0.68rem 0.34rem 0.4rem;
   backdrop-filter: blur(8px);
+}
+
+.card-panel-active .card-business-lockup {
+  left: 1.25rem;
+  bottom: 1.1rem;
+  max-width: 220px;
 }
 
 .card-business-lockup img {
@@ -254,6 +284,85 @@ select {
   gap: 0.38rem;
 }
 
+.card-profile-locked {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.9rem;
+  padding-right: 0.15rem;
+}
+
+.card-profile-active {
+  align-items: start;
+  gap: 1rem;
+  padding-bottom: 0.35rem;
+}
+
+.card-profile-active > div:first-child {
+  padding-right: 0.4rem;
+}
+
+.card-profile-active p {
+  margin: 0 0 0.7rem;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+
+.card-profile-active .position-badge {
+  margin-top: 0;
+}
+
+.card-profile-locked > div:first-child {
+  padding-top: 0.15rem;
+}
+
+.card-profile-locked .label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.card-profile-locked h2 {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  margin: 0.2rem 0 0.4rem;
+}
+
+.card-profile-locked p {
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  line-height: 1.2;
+  margin: 0 0 0.55rem;
+  color: #f2c46d;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(70, 39, 3, 0.18);
+}
+
+.card-profile-locked .position-badge {
+  margin-top: 0.45rem;
+  padding: 0.42rem 0.92rem;
+  font-size: 0.64rem;
+}
+
+.card-profile-locked .card-photo-stack {
+  justify-items: end;
+  gap: 0.55rem;
+}
+
+.card-profile-locked .customer-photo {
+  width: 86px;
+  height: 86px;
+  border-radius: 20px;
+}
+
+.card-profile-locked .status-pill {
+  justify-self: end;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.68rem;
+}
+
 .position-badge {
   display: inline-flex;
   margin-top: 0.75rem;
@@ -279,6 +388,15 @@ select {
   gap: 0;
 }
 
+.card-panel-locked .card-pin-area {
+  left: 1.15rem;
+  right: 1.15rem;
+  bottom: 0.9rem;
+  justify-content: space-between;
+  align-items: end;
+  gap: 0.7rem;
+}
+
 .card-pin-box {
   display: grid;
   width: min(52%, 250px);
@@ -291,12 +409,26 @@ select {
   backdrop-filter: blur(8px);
 }
 
+.card-panel-locked .card-pin-box {
+  width: min(100%, 290px);
+  min-width: 0;
+  gap: 0.28rem;
+  border-radius: 14px;
+  padding: 0.48rem;
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .card-pin-box span {
   color: rgba(255, 255, 255, 0.76);
   font-size: 0.52rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.card-panel-locked .card-pin-box span {
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
 }
 
 .card-pin-box div {
@@ -315,6 +447,13 @@ select {
   font-size: 0.78rem;
 }
 
+.card-panel-locked .card-pin-box input {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0.62rem 0.78rem;
+  font-size: 0.78rem;
+}
+
 .card-pin-box button {
   border: 0;
   border-radius: 0.35rem;
@@ -324,6 +463,13 @@ select {
   font-weight: 700;
   padding: 0.32rem 0.48rem;
   font-size: 0.78rem;
+}
+
+.card-panel-locked .card-pin-box button {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0.62rem 0.95rem;
+  font-weight: 800;
 }
 
 .card-pin-box button:disabled {
@@ -356,9 +502,23 @@ select {
   pointer-events: none;
 }
 
+.card-panel-locked .card-pin-mascot {
+  width: min(46%, 186px);
+  height: 146px;
+  margin: 0;
+  border-radius: 22px;
+  box-shadow: 0 18px 26px rgba(38, 22, 5, 0.2);
+  clip-path: inset(0 round 1.4rem);
+}
+
 .card-pin-mascot img {
   transform: scale(1.18);
   object-position: center 74%;
+}
+
+.card-panel-locked .card-pin-mascot img {
+  transform: scale(1.04);
+  object-position: center 70%;
 }
 
 .card-profile-block .status-pill {
@@ -1875,7 +2035,7 @@ tr:hover td {
 }
 
 .app-screen {
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
   padding: 0.75rem;
 }
@@ -1888,6 +2048,44 @@ tr:hover td {
   min-height: auto;
   gap: 0.75rem;
   padding: 0.85rem;
+}
+
+.app-shell.compact-shell.customer-shell {
+  width: min(100%, 1280px);
+  min-height: calc(100vh - 1.5rem);
+  min-height: calc(100svh - 1.5rem);
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+.customer-shell-locked {
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+}
+
+.customer-shell-active {
+  grid-template-rows: auto auto auto auto auto auto auto;
+}
+
+.card-stage {
+  width: 100%;
+  display: flex;
+}
+
+.card-stage-locked {
+  min-height: min(720px, calc(100vh - 12rem));
+  min-height: min(720px, calc(100svh - 12rem));
+  align-items: center;
+  justify-content: center;
+}
+
+.card-stage-active {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.card-stage > .card-panel {
+  width: min(100%, 760px);
+  margin: 0 auto;
 }
 
 .app-shell.compact-shell > .brand-lockup,
@@ -2038,6 +2236,12 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 
+  .app-shell.compact-shell.customer-shell {
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 0.85rem 0.75rem;
+  }
+
   .app-shell.compact-shell > .brand-lockup,
   .app-shell.compact-shell > .staff-session-panel,
   .app-shell.compact-shell > .staff-login-link,
@@ -2065,6 +2269,37 @@ tr:hover td {
     width: 104px;
     height: 86px;
     margin-left: 0.35rem;
+  }
+
+  .card-panel-locked {
+    min-height: 340px;
+  }
+
+  .card-profile-locked h2 {
+    font-size: 1.8rem;
+  }
+
+  .card-profile-locked p {
+    font-size: 1rem;
+  }
+
+  .card-panel-locked .card-pin-area {
+    left: 0.7rem;
+    right: 0.7rem;
+    gap: 0.45rem;
+  }
+
+  .card-panel-locked .card-pin-mascot {
+    width: 122px;
+    height: 102px;
+  }
+
+  .card-stage-locked {
+    min-height: calc(100svh - 11rem);
+  }
+
+  .card-stage > .card-panel {
+    width: 100%;
   }
 }
 

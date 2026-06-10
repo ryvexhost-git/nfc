@@ -48,7 +48,7 @@ npm run dev:frontend
 Open:
 
 ```text
-http://localhost:5173/RYV-001
+http://localhost:5173/TCB-8645
 ```
 
 Admin:
@@ -60,7 +60,7 @@ http://localhost:5173/admin
 Demo card:
 
 ```text
-Card: RYV-001
+Card: TCB-8645
 Password: 1234
 Starting balance: Rs.250
 Daily debit limit: Rs.50
@@ -73,8 +73,8 @@ Admin password: admin123
 Write either format to an NFC card:
 
 ```text
-https://your-subdomain.example.com/RYV-001
-https://your-subdomain.example.com/?card=RYV-001
+https://your-subdomain.example.com/TCB-8645
+https://your-subdomain.example.com/?card=TCB-8645
 ```
 
 ## Create Your Own Git Repo

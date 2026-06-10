@@ -37,11 +37,12 @@
   "cards": [
     {
       "id": "demo-card-001",
-      "card_number": "RYV-001",
-      "holder_name": "Demo User",
+      "card_number": "TCB-8645",
+      "holder_name": "JISHNU SAJEEV",
+      "photo_url": "/d_photo.png",
       "phone": "9999999999",
-      "position": "regular",
-      "password_hash": "$2b$10$UUf2gItAFQY8oqluU1pF/.zvI3G9Ng7YVlsDxkm3MW6tYr5uPUTKa",
+      "position": "Premium Customer",
+      "password_hash": "$2b$10$/RAHKH7Er.o5NFM7.9aI9./n9TESIEBOfkEA7lcW0OE6h.P5fnmsi",
       "balance": 250,
       "status": "active",
       "created_at": "2026-05-22T00:00:00.000Z"

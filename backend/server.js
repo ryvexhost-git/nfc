@@ -39,7 +39,7 @@ const defaultSettings = {
   lowBalanceThreshold: 50,
   maxCardBalance: 5000,
   openingBalanceDefault: 0,
-  cardPrefix: 'RYV',
+  cardPrefix: 'TCB',
   nfcBaseUrl: '',
   invoicePrefix: 'NFC',
   timezone: 'Asia/Kolkata',
