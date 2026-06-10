@@ -438,7 +438,12 @@ function CustomerApp({ settings, setSettings }) {
   return (
     <main className="app-screen">
       <section className={`app-shell compact-shell customer-shell ${token ? 'customer-shell-active' : 'customer-shell-locked'}`}>
-        <Brand settings={settings} />
+        <div className="customer-shell-topbar">
+          <Brand settings={settings} />
+          <button className="staff-login-button" type="button" onClick={() => setShowStaffLogin((value) => !value)}>
+            {showStaffLogin ? 'Hide staff login' : 'Staff login'}
+          </button>
+        </div>
 
         <section className={`card-stage ${token ? 'card-stage-active' : 'card-stage-locked'}`}>
           {card ? (
@@ -481,7 +486,7 @@ function CustomerApp({ settings, setSettings }) {
             <section className="card-panel missing-card" style={cardStyle}>
               <div>
                 <span className="label">NFC Card</span>
-                <h2>Card not found</h2>
+                <h2>The Coffeebun.in</h2>
                 <p>Please contact the counter team to verify this card.</p>
               </div>
             </section>
@@ -569,10 +574,6 @@ function CustomerApp({ settings, setSettings }) {
             </section>
           </>
         )}
-
-        <button className="staff-login-link" type="button" onClick={() => setShowStaffLogin((value) => !value)}>
-          {showStaffLogin ? 'Hide staff login' : 'Staff login'}
-        </button>
 
         {showStaffLogin && (
         <section className="staff-session-panel">

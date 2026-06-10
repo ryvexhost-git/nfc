@@ -68,6 +68,20 @@ const defaultManager = {
   created_at: '2026-05-22T00:00:00.000Z',
 };
 
+const defaultCard = {
+  id: 'card-tcb-8645',
+  card_number: 'TCB-8645',
+  holder_name: 'JISHNU SAJEEV',
+  photo_url: '/d_photo.png',
+  phone: '9999999999',
+  position: 'Premium Customer',
+  password_hash: '$2b$10$/RAHKH7Er.o5NFM7.9aI9./n9TESIEBOfkEA7lcW0OE6h.P5fnmsi',
+  balance: 250,
+  status: 'active',
+  created_at: '2026-05-22T00:00:00.000Z',
+};
+const defaultCardAliases = ['demo-card-001', 'TCB-001'];
+
 function ensureDb() {
   const dataDir = path.dirname(DB_FILE);
   if (!fs.existsSync(dataDir)) {
@@ -77,7 +91,7 @@ function ensureDb() {
     fs.writeFileSync(DB_FILE, JSON.stringify({
       settings: defaultSettings,
       admins: [defaultAdmin, defaultManager],
-      cards: [],
+      cards: [defaultCard],
       transactions: [],
     }, null, 2));
   }
@@ -86,13 +100,18 @@ function ensureDb() {
 function normalizeDb(data) {
   const admins = data.admins?.length ? data.admins : [defaultAdmin, defaultManager];
   const hasDefaultManager = admins.some((admin) => admin.username === defaultManager.username);
+  const cards = data.cards?.length ? data.cards : [defaultCard];
+  const hasPrimaryCard = cards.some((card) => card.card_number === defaultCard.card_number);
   return {
     settings: { ...defaultSettings, ...(data.settings || {}) },
     admins: (hasDefaultManager ? admins : [...admins, defaultManager]).map((admin) => ({
       active: true,
       ...admin,
     })),
-    cards: data.cards || [],
+    cards: (hasPrimaryCard ? cards : [...cards, defaultCard]).map((card) => ({
+      ...card,
+      id: card.card_number === defaultCard.card_number ? defaultCard.id : card.id,
+    })),
     transactions: data.transactions || [],
   };
 }
@@ -126,7 +145,8 @@ function numberSetting(value, fallback) {
 }
 
 function getCardById(db, cardId) {
-  return db.cards.find((card) => card.id === cardId || card.card_number === cardId);
+  const normalizedCardId = defaultCardAliases.includes(cardId) ? defaultCard.card_number : cardId;
+  return db.cards.find((card) => card.id === normalizedCardId || card.card_number === normalizedCardId);
 }
 
 function getPublicSettings(settings) {

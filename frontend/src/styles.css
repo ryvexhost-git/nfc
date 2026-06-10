@@ -327,7 +327,7 @@ select {
 }
 
 .card-profile-locked h2 {
-  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-size: clamp(1.55rem, 3vw, 2rem);
   margin: 0.2rem 0 0.4rem;
 }
 
@@ -527,17 +527,40 @@ select {
   margin-top: 0;
 }
 
-.staff-login-link {
-  grid-column: 1 / -1;
-  justify-self: start;
-  border: 0;
-  background: transparent;
-  color: var(--shards-primary);
+.customer-shell-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.customer-shell-topbar .brand-lockup {
+  min-width: 0;
+}
+
+.staff-login-button {
+  border: 1px solid rgba(0, 123, 255, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
+  color: var(--shards-primary-dark);
   cursor: pointer;
   font-size: 0.82rem;
-  font-weight: 500;
-  padding: 0;
-  text-decoration: underline;
+  font-weight: 800;
+  padding: 0.62rem 0.9rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 123, 255, 0.12);
+  white-space: nowrap;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.staff-login-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 123, 255, 0.16);
+  background: linear-gradient(180deg, #ffffff 0%, #e6f0ff 100%);
+}
+
+.staff-login-button:focus-visible {
+  outline: 2px solid rgba(0, 123, 255, 0.35);
+  outline-offset: 2px;
 }
 
 .notice-box,
@@ -1759,12 +1782,13 @@ body {
 .account-popover button,
 .form-panel button,
 .history-head button {
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  font-weight: 400;
+  min-height: 2.5rem;
+  border-radius: 0.5rem;
+  box-shadow: none;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease, color 140ms ease;
 }
 
 .ghost-button:hover,
@@ -1773,23 +1797,23 @@ body {
 .account-popover button:hover,
 .form-panel button:hover,
 .history-head button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05), 0 4px 10px rgba(0, 123, 255, 0.25);
+  transform: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .panel button,
 .form-panel button,
 .account-popover button {
-  background: var(--shards-primary);
-  border-color: var(--shards-primary);
-  box-shadow: none;
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 .panel button:hover,
 .form-panel button:hover,
 .account-popover button:hover {
-  background: var(--shards-primary-dark);
-  border-color: var(--shards-primary-dark);
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .panel button:disabled,
@@ -1805,8 +1829,8 @@ body {
 .table-button,
 .account-popover .logout-option {
   background: #ffffff;
-  color: var(--ink);
-  border-color: var(--line);
+  color: #27313f;
+  border-color: #cbd5e1;
 }
 
 .panel {
@@ -1858,12 +1882,14 @@ body {
 .form-panel input,
 .inline-input,
 .account-popover input {
+  min-height: 2.5rem;
   background: #ffffff;
-  border-color: var(--line);
-  box-shadow: none;
-  border-radius: 0.25rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
 }
 
 .filter-bar input:focus,
@@ -1877,8 +1903,8 @@ body {
 .form-panel input:focus,
 .inline-input:focus,
 .account-popover input:focus {
-  border-color: var(--shards-primary);
-  box-shadow: 0 0.313rem 0.719rem rgba(0, 123, 255, 0.1), 0 0.156rem 0.125rem rgba(0, 0, 0, 0.06);
+  border-color: #4573d2;
+  box-shadow: 0 0 0 3px rgba(69, 115, 210, 0.14);
   outline: none;
 }
 
@@ -1886,10 +1912,11 @@ body {
 .panel label,
 .form-panel label,
 .account-popover label {
-  color: inherit;
-  letter-spacing: 0.02em;
+  color: #5b6675;
+  letter-spacing: 0;
   text-transform: none;
-  font-weight: 400;
+  font-weight: 600;
+  font-size: 0.82rem;
 }
 
 .field-grid input::placeholder,
@@ -2088,9 +2115,8 @@ tr:hover td {
   margin: 0 auto;
 }
 
-.app-shell.compact-shell > .brand-lockup,
+.app-shell.compact-shell > .customer-shell-topbar,
 .app-shell.compact-shell > .staff-session-panel,
-.app-shell.compact-shell > .staff-login-link,
 .app-shell.compact-shell > .support-footer,
 .app-shell.compact-shell > .customer-note,
 .app-shell.compact-shell > .message-box {
@@ -2242,13 +2268,21 @@ tr:hover td {
     padding: 0.85rem 0.75rem;
   }
 
-  .app-shell.compact-shell > .brand-lockup,
+  .app-shell.compact-shell > .customer-shell-topbar,
   .app-shell.compact-shell > .staff-session-panel,
-  .app-shell.compact-shell > .staff-login-link,
   .app-shell.compact-shell > .support-footer,
   .app-shell.compact-shell > .customer-note,
   .app-shell.compact-shell > .message-box {
     grid-column: auto;
+  }
+
+  .customer-shell-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .staff-login-button {
+    align-self: flex-end;
   }
 
   .staff-session-form {
@@ -2276,7 +2310,7 @@ tr:hover td {
   }
 
   .card-profile-locked h2 {
-    font-size: 1.8rem;
+    font-size: 1.45rem;
   }
 
   .card-profile-locked p {

@@ -15,7 +15,7 @@
     "maxCardBalance": 5000,
     "openingBalanceDefault": 500,
     "cardPrefix": "TCB",
-    "nfcBaseUrl": "https://nfc.coffeebun.in/TCB-001",
+    "nfcBaseUrl": "https://nfc.coffeebun.in/TCB-8645",
     "invoicePrefix": "NFC",
     "timezone": "Asia/Kolkata",
     "receiptFooter": "",
@@ -36,7 +36,7 @@
   ],
   "cards": [
     {
-      "id": "demo-card-001",
+      "id": "card-tcb-8645",
       "card_number": "TCB-8645",
       "holder_name": "JISHNU SAJEEV",
       "photo_url": "/d_photo.png",
