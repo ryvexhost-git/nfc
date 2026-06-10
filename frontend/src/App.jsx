@@ -211,9 +211,12 @@ function HomePage({ settings }) {
               <h1>{settings.businessName || 'THE COFFEEBUN'}</h1>
             </div>
           </div>
-          <div className="home-contact">
-            {settings.supportPhone && <span>{settings.supportPhone}</span>}
-            {settings.supportEmail && <span>{settings.supportEmail}</span>}
+          <div className="home-pin-box" aria-label="Card pin shortcut">
+            <span>Enter PIN</span>
+            <div>
+              <input type="password" placeholder="Card PIN" />
+              <button type="button">Unlock</button>
+            </div>
           </div>
         </header>
 
@@ -286,6 +289,13 @@ function HomePage({ settings }) {
             ))}
           </div>
         </section>
+
+        {(settings.supportPhone || settings.supportEmail) && (
+          <footer className="home-contact-footer">
+            {settings.supportPhone && <span>{settings.supportPhone}</span>}
+            {settings.supportEmail && <span>{settings.supportEmail}</span>}
+          </footer>
+        )}
       </section>
     </main>
   );
@@ -1124,7 +1134,9 @@ function AdminApp({ settings, setSettings }) {
     { id: 'overview', label: 'Overview', group: 'Dashboard' },
     { id: 'business', label: 'Business Settings', group: 'Dashboard' },
     { id: 'cards', label: 'Cards', group: 'Wallet' },
+    { id: 'card-list', label: 'Card List', group: 'Wallet' },
     { id: 'topups', label: 'Top-ups', group: 'Wallet' },
+    { id: 'pin-reset', label: 'Card Reset PIN', group: 'Wallet' },
     { id: 'transactions', label: 'Transactions', group: 'Reports' },
     { id: 'analytics', label: 'Analytics', group: 'Reports' },
     ...(currentAdmin?.role === 'admin' ? [{ id: 'users', label: 'Employees', group: 'Team' }] : []),
@@ -1200,6 +1212,108 @@ function AdminApp({ settings, setSettings }) {
   }).join(' ');
   const analyticsPieTotal = Number(analyticsTotals.debit || 0) + Number(analyticsTotals.topup || 0);
   const analyticsDebitPercent = analyticsPieTotal ? Math.round((Number(analyticsTotals.debit || 0) / analyticsPieTotal) * 100) : 0;
+  const cardListSection = (
+    <section className="panel">
+      <div className="panel-head">
+        <h2>Card List</h2>
+        <span className="muted">{filteredCards.length} of {cards.length} cards shown.</span>
+      </div>
+      <div className="filter-bar">
+        <input value={cardSearch} onChange={(event) => setCardSearch(event.target.value)} placeholder="Search card, holder, phone, or position" />
+        <select value={cardStatusFilter} onChange={(event) => setCardStatusFilter(event.target.value)}>
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Photo</th><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {filteredCards.map((card) => (
+              <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
+                <td>
+                  {settings.enableCustomerPhoto !== false ? (
+                    <div className="table-photo-cell">
+                      {card.photoUrl ? (
+                        <img className="table-photo" src={card.photoUrl} alt={card.holderName} />
+                      ) : (
+                        <div className="table-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
+                      )}
+                      <label className="photo-upload-button">
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => {
+                            event.stopPropagation();
+                            handlePhotoUpload(event, (photoUrl) => updateCard(card, { photoUrl }));
+                          }}
+                        />
+                      </label>
+                      {card.photoUrl && (
+                        <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { photoUrl: '' }); }}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="muted">Off</span>
+                  )}
+                </td>
+                <td>{card.cardNumber}</td>
+                <td>{card.holderName}</td>
+                <td>{card.phone}</td>
+                <td>
+                  <input
+                    className="inline-input"
+                    defaultValue={card.position || ''}
+                    onClick={(event) => event.stopPropagation()}
+                    onBlur={(event) => {
+                      const nextPosition = event.target.value.trim();
+                      if (nextPosition !== (card.position || '')) updateCard(card, { position: nextPosition });
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') event.currentTarget.blur();
+                    }}
+                    placeholder="Position"
+                  />
+                </td>
+                <td>
+                  <span className="balance-cell-value">{formatMoney(card.balance, settings)}</span>
+                  {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && <span className="balance-alert">Low</span>}
+                </td>
+                <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
+                <td className="actions-cell">
+                  {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && (
+                    <button className="table-button warning-button" type="button" onClick={(event) => { event.stopPropagation(); sendLowBalanceMessage(card); }}>
+                      Message
+                    </button>
+                  )}
+                  <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); copyCardLink(card.cardNumber); }}>
+                    Copy Link
+                  </button>
+                  <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); setPinResetForm({ cardId: card.id, password: '' }); setActiveCardId(card.id); setActiveAdminPage('pin-reset'); }}>
+                    Reset PIN
+                  </button>
+                  <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
+                    {card.status === 'active' ? 'Block' : 'Activate'}
+                  </button>
+                  <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filteredCards.length === 0 && <p className="muted empty-state">No cards match this filter.</p>}
+      </div>
+    </section>
+  );
 
   if (!token) {
     return (
@@ -1405,14 +1519,12 @@ function AdminApp({ settings, setSettings }) {
         )}
 
         {activeAdminPage === 'cards' && (
-          <>
-            <form className="panel standard-page" onSubmit={createCard}>
-              <div className="panel-head">
+          <form className="panel standard-page" onSubmit={createCard}>
+              <div className="panel-head panel-head-stack">
                 <div>
                   <h2>Create Card</h2>
                   <p className="muted">Use the generated card number or enter one manually for a mapped NFC card.</p>
                 </div>
-                <button type="submit" disabled={creatingCard}>{creatingCard ? 'Creating...' : 'Create'}</button>
               </div>
               <div className="field-grid">
                 <label>Card number<input value={cardForm.cardNumber} onChange={(event) => setCardForm({ ...cardForm, cardNumber: event.target.value.toUpperCase() })} placeholder={nextCardNumber} /></label>
@@ -1430,132 +1542,13 @@ function AdminApp({ settings, setSettings }) {
                   </div>
                 )}
               </div>
-            </form>
-
-            <form className="panel standard-page" onSubmit={resetCardPin}>
-              <div className="panel-head">
-                <div>
-                  <h2>Reset Card PIN</h2>
-                  <p className="muted">Use this when a customer forgets their card PIN. The old PIN is not required.</p>
-                </div>
-                <button type="submit" disabled={resettingPin}>{resettingPin ? 'Resetting...' : 'Reset PIN'}</button>
+              <div className="form-actions form-actions-end">
+                <button className="compact-action-button" type="submit" disabled={creatingCard}>{creatingCard ? 'Creating...' : 'Create'}</button>
               </div>
-              <div className="field-grid">
-                <label>
-                  Customer card
-                  <select value={pinResetForm.cardId} onChange={(event) => setPinResetForm({ ...pinResetForm, cardId: event.target.value })} required>
-                    <option value="">Select card</option>
-                    {cards.map((card) => (
-                      <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>New PIN<input type="password" value={pinResetForm.password} onChange={(event) => setPinResetForm({ ...pinResetForm, password: event.target.value })} placeholder="Enter new card PIN" required /></label>
-              </div>
-            </form>
-
-            <section className="panel">
-              <div className="panel-head">
-                <h2>Card List</h2>
-                <span className="muted">{filteredCards.length} of {cards.length} cards shown.</span>
-              </div>
-              <div className="filter-bar">
-                <input value={cardSearch} onChange={(event) => setCardSearch(event.target.value)} placeholder="Search card, holder, phone, or position" />
-                <select value={cardStatusFilter} onChange={(event) => setCardStatusFilter(event.target.value)}>
-                  <option value="all">All statuses</option>
-                  <option value="active">Active</option>
-                  <option value="blocked">Blocked</option>
-                </select>
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Photo</th><th>Card</th><th>Holder</th><th>Phone</th><th>Position</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {filteredCards.map((card) => (
-                      <tr key={card.id} className={activeCardId === card.id ? 'selected-row' : ''} onClick={() => { setActiveCardId(card.id); setTopUpForm((prev) => ({ ...prev, cardId: card.id })); }}>
-                        <td>
-                          {settings.enableCustomerPhoto !== false ? (
-                            <div className="table-photo-cell">
-                              {card.photoUrl ? (
-                                <img className="table-photo" src={card.photoUrl} alt={card.holderName} />
-                              ) : (
-                                <div className="table-photo placeholder-photo">{card.holderName?.slice(0, 1) || 'C'}</div>
-                              )}
-                              <label className="photo-upload-button">
-                                Upload
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onClick={(event) => event.stopPropagation()}
-                                  onChange={(event) => {
-                                    event.stopPropagation();
-                                    handlePhotoUpload(event, (photoUrl) => updateCard(card, { photoUrl }));
-                                  }}
-                                />
-                              </label>
-                              {card.photoUrl && (
-                                <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { photoUrl: '' }); }}>
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="muted">Off</span>
-                          )}
-                        </td>
-                        <td>{card.cardNumber}</td>
-                        <td>{card.holderName}</td>
-                        <td>{card.phone}</td>
-                        <td>
-                          <input
-                            className="inline-input"
-                            defaultValue={card.position || ''}
-                            onClick={(event) => event.stopPropagation()}
-                            onBlur={(event) => {
-                              const nextPosition = event.target.value.trim();
-                              if (nextPosition !== (card.position || '')) updateCard(card, { position: nextPosition });
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter') event.currentTarget.blur();
-                            }}
-                            placeholder="Position"
-                          />
-                        </td>
-                        <td>
-                          <span className="balance-cell-value">{formatMoney(card.balance, settings)}</span>
-                          {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && <span className="balance-alert">Low</span>}
-                        </td>
-                        <td><span className={`small-status ${card.status}`}>{card.status}</span></td>
-                        <td className="actions-cell">
-                          {card.status === 'active' && Number(card.balance || 0) < messageBalanceLimit && (
-                            <button className="table-button warning-button" type="button" onClick={(event) => { event.stopPropagation(); sendLowBalanceMessage(card); }}>
-                              Message
-                            </button>
-                          )}
-                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); copyCardLink(card.cardNumber); }}>
-                            Copy Link
-                          </button>
-                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); setPinResetForm({ cardId: card.id, password: '' }); setActiveCardId(card.id); }}>
-                            Reset PIN
-                          </button>
-                          <button className="table-button" type="button" onClick={(event) => { event.stopPropagation(); updateCard(card, { status: card.status === 'active' ? 'blocked' : 'active' }); }}>
-                            {card.status === 'active' ? 'Block' : 'Activate'}
-                          </button>
-                          <button className="table-button danger-button" type="button" onClick={(event) => { event.stopPropagation(); deleteCard(card.id); }}>
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredCards.length === 0 && <p className="muted empty-state">No cards match this filter.</p>}
-              </div>
-            </section>
-          </>
+          </form>
         )}
+
+        {activeAdminPage === 'card-list' && cardListSection}
 
         {activeAdminPage === 'topups' && (
           <div className="admin-grid">
@@ -1599,6 +1592,30 @@ function AdminApp({ settings, setSettings }) {
               </div>
             </section>
           </div>
+        )}
+
+        {activeAdminPage === 'pin-reset' && (
+          <form className="panel standard-page" onSubmit={resetCardPin}>
+            <div className="panel-head">
+              <div>
+                <h2>Reset Card PIN</h2>
+                <p className="muted">Use this when a customer forgets their card PIN. The old PIN is not required.</p>
+              </div>
+              <button type="submit" disabled={resettingPin}>{resettingPin ? 'Resetting...' : 'Reset PIN'}</button>
+            </div>
+            <div className="field-grid">
+              <label>
+                Customer card
+                <select value={pinResetForm.cardId} onChange={(event) => setPinResetForm({ ...pinResetForm, cardId: event.target.value })} required>
+                  <option value="">Select card</option>
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>{card.cardNumber} - {card.holderName}</option>
+                  ))}
+                </select>
+              </label>
+              <label>New PIN<input type="password" value={pinResetForm.password} onChange={(event) => setPinResetForm({ ...pinResetForm, password: event.target.value })} placeholder="Enter new card PIN" required /></label>
+            </div>
+          </form>
         )}
 
         {activeAdminPage === 'transactions' && (
